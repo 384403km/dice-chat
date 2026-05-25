@@ -76,18 +76,25 @@
   .status-arrow { transition: transform 0.3s; font-size: 12px; }
   .status-panel.open .status-arrow { transform: rotate(180deg); }
   .status-panel-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; background: rgba(0,0,0,0.3); }
-  .status-panel.open .status-panel-body { max-height: 300px; overflow-y: auto; }
+  .status-panel.open .status-panel-body { max-height: 320px; overflow-y: auto; }
   .status-section { padding: 8px 14px; }
   .status-section-title { font-size: 11px; color: #a78bfa; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px; }
   .status-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
   .status-item { font-size: 10px; color: #bbb; }
-  .status-item span { color: #ddd; font-weight: bold; }
-  .lingnet-item { font-size: 10px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); color: #999; line-height: 1.4; }
+  .status-item span { color: #ddd; font-weight: bold; transition: all 0.3s; }
+  .status-item span.flash { animation: statFlash 0.6s ease; }
+  @keyframes statFlash { 0%{color:#fff;text-shadow:0 0 8px #f39c12} 50%{color:#f39c12} 100%{color:#ddd;text-shadow:none} }
+  .lingnet-item {
+    font-size: 10px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #999; line-height: 1.4; transition: background 0.3s;
+  }
   .lingnet-item:last-child { border-bottom: none; }
+  .lingnet-item.highlight { background: rgba(124,58,237,0.2); color: #e9d5ff; border-radius: 4px; padding: 4px 6px; }
   .lingnet-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; font-weight: bold; }
   .lingnet-tag.news { background: #2980b9; color: #fff; }
   .lingnet-tag.rumor { background: #8e44ad; color: #fff; }
   .lingnet-tag.danger { background: #c0392b; color: #fff; }
+  .lingnet-tag.traveler { background: #27ae60; color: #fff; }
   .input-area { padding: 8px 10px; display: flex; gap: 6px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); flex-shrink: 0; }
   .input-area input { flex: 1; padding: 8px 12px; border-radius: 18px; border: none; background: rgba(255,255,255,0.08); color: white; outline: none; font-size: 13px; min-width: 0; }
   .input-area input::placeholder { color: rgba(255,255,255,0.3); }
@@ -105,6 +112,8 @@
   .loading-dot:nth-child(2){animation-delay:0.2s} .loading-dot:nth-child(3){animation-delay:0.4s}
   @keyframes loadingBounce { 0%,80%,100%{transform:scale(0.6);opacity:0.3} 40%{transform:scale(1);opacity:1} }
   .api-error { color: #e74c3c; font-size: 11px; padding: 4px 8px; }
+  .lingnet-badge { display: inline-block; background: #e74c3c; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; margin-left: 4px; animation: badgePulse 1.5s infinite; }
+  @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 </head>
 <body>
@@ -114,7 +123,7 @@
     <div class="avatar" id="avatarIcon" onclick="toggleStatusPanel()">🧝</div>
     <div class="role-info" onclick="toggleStatusPanel()">
       <div class="role-name" id="roleName">艾尔德兰大陆</div>
-      <div class="role-status"><span class="status-dot" id="statusDot"></span><span id="roleSubtitle">点击头像查看状态</span></div>
+      <div class="role-status"><span class="status-dot" id="statusDot"></span><span id="roleSubtitle">点击头像查看状态</span> <span class="lingnet-badge" id="lingnetBadge" style="display:none">🔔</span></div>
     </div>
     <div class="header-btns">
       <button class="header-btn" onclick="location.href='create.html'">🔄 创建角色</button>
@@ -136,7 +145,7 @@
           <div class="status-item">⚡ 魔力值 <span id="sMp">100%</span></div>
           <div class="status-item">🛡️ 体力 <span id="sStamina">饱满</span></div>
           <div class="status-item">🤕 伤势 <span id="sInjury">无</span></div>
-          <div class="status-item">🍗 饥饿度 <span id="sHunger">正常</span></div>
+          <div class="status-item">🍗 饥饿度 <span id="sHunger">正常</span> <span id="sHpNum" style="font-size:8px;opacity:0.6"></span></div>
           <div class="status-item">💊 异常状态 <span id="sStatus">无</span></div>
         </div>
       </div>
@@ -164,7 +173,38 @@
   var API_URL = '/api/chat';
   var STATS = ['力量','敏捷','体力','魔力','智力','魅力'];
 
-  var playerState = { hp: 100, maxHp: 100, mp: 100, maxMp: 100, stamina: '饱满', injury: '无', hunger: '正常', status: '无', xp: 0, gold: 50, location: '银月森林' };
+  var playerState = {
+    hp: 100, maxHp: 100, mp: 100, maxMp: 100,
+    stamina: '饱满', injury: '无', hunger: '正常', status: '无',
+    xp: 0, gold: 50, location: '银月森林',
+    hungerNum: 100 // 0-100 饥饿度数值
+  };
+
+  // ========== 大陆灵网消息池 ==========
+  var LINGNET_POOL = [
+    // 公会
+    {tag:'公会',text:'冒险者公会发布紧急委托：北境荒原出现新的深渊裂隙，急需调查队。报酬300金币。'},
+    {tag:'公会',text:'王都格兰威尔的冒险者公会正在招募有经验的猎人，追捕一只在城外袭击商队的大型魔物。'},
+    {tag:'公会',text:'公会公告：下届冒险者考核将于月圆之夜举行，报名截止三日后。'},
+    {tag:'公会',text:'药草师协会委托：需采集银月森林深处的月光苔，每份15金币。注意暗精灵巡逻队。'},
+    {tag:'公会',text:'铁炉山脉矿工报告发现一处古老的矮人遗迹，公会悬赏探索者。'},
+    // 传闻
+    {tag:'传闻',text:'有旅人声称在影月荒原见到一座漂浮的倒悬城堡，可能是上古时期的天空遗迹。'},
+    {tag:'传闻',text:'酒馆传言：一位白发红瞳的少女最近频繁出现在星陨峡谷，似乎在寻找什么。'},
+    {tag:'传闻',text:'据说银月旅团的精灵游侠艾琳最近在调查一个关于"星辉碎片"的线索。'},
+    {tag:'传闻',text:'有人声称听到了来自深渊的低语——像是某种古老语言，反复念着一个名字。'},
+    {tag:'传闻',text:'商队传闻：东方的商路上出现了一队神秘的蒙面旅者，所到之处魔物退散。'},
+    // 警示
+    {tag:'警示',text:'法师塔警告：近期深渊裂隙活动频率增加，建议低等级冒险者避免单人行动。'},
+    {tag:'警示',text:'铁炉山脉发生小规模地震，矿洞结构可能不稳定。冒险者请勿深入废弃矿道。'},
+    {tag:'警示',text:'王都守卫队报告：银月森林外围发现暗精灵斥候的踪迹。建议携带照明道具。'},
+    {tag:'警示',text:'天气预警：一场异常的魔力风暴正在从北境逼近，预计三日内影响整个大陆。'},
+    {tag:'警示',text:'冒险者公会发布安全通告：近期有伪装成冒险者的欺诈团伙活动，请核实委托方的公会认证。'},
+    // 冒险者消息（新增类型）
+    {tag:'旅人',text:'一位自称"苍崎千夜"的流浪武士在酒馆里吹嘘自己当年斩杀过龙。没人相信他——但他的剑确实不是凡品。'},
+    {tag:'旅人',text:'有位商人模样的神秘男子在各地酒馆出现，自称"孔祥灏"，声称可以"实现任何愿望"——但从未有人成功找到他第二次。'},
+    {tag:'旅人',text:'一位年轻冒险者在公会留言板上留下了求助信息："寻找会说话的猫，黑色，戴着一枚星形挂坠。必有重谢。"'}
+  ];
 
   var charData = null;
   try { var raw = localStorage.getItem('eldran_character'); if (raw) charData = JSON.parse(raw); } catch(e) {}
@@ -210,6 +250,7 @@
   var sendBtn = document.getElementById('sendBtn');
   var rollBtn = document.getElementById('rollBtn');
   var statusDot = document.getElementById('statusDot');
+  var lastLingnetUpdate = Date.now();
 
   if (charData) {
     var displayName = charData.name || charData.角色名 || (charData.raceInfo?.名||'冒险者');
@@ -346,41 +387,147 @@
   }
 
   function updatePlayerState(data) {
-    if (data.hp) playerState.hp = data.hp; if (data.mp) playerState.mp = data.mp;
-    if (data.stamina) playerState.stamina = data.stamina; if (data.injury) playerState.injury = data.injury;
-    if (data.hunger) playerState.hunger = data.hunger; if (data.status) playerState.status = data.status;
-    if (data.gold) { if (typeof data.gold === 'string' && data.gold.startsWith('+')) playerState.gold += parseInt(data.gold.slice(1))||0; else if (typeof data.gold === 'string' && data.gold.startsWith('-')) playerState.gold -= parseInt(data.gold.slice(1))||0; else playerState.gold += parseInt(data.gold)||0; }
-    if (data.xp) { if (typeof data.xp === 'string' && data.xp.startsWith('+')) playerState.xp += parseInt(data.xp.slice(1))||0; else playerState.xp += parseInt(data.xp)||0; }
-    if (data.location) playerState.location = data.location;
-    updateStatusDisplay();
+    var changed = false;
+    if (data.hp !== undefined) { playerState.hp = data.hp; changed = true; }
+    if (data.mp !== undefined) { playerState.mp = data.mp; changed = true; }
+    if (data.stamina) { playerState.stamina = data.stamina; changed = true; }
+    if (data.injury) { playerState.injury = data.injury; changed = true; }
+    if (data.hunger) { playerState.hunger = data.hunger; changed = true; }
+    if (data.status) { playerState.status = data.status; changed = true; }
+    if (data.gold) { if (typeof data.gold === 'string' && data.gold.startsWith('+')) playerState.gold += parseInt(data.gold.slice(1))||0; else if (typeof data.gold === 'string' && data.gold.startsWith('-')) playerState.gold -= parseInt(data.gold.slice(1))||0; else playerState.gold += parseInt(data.gold)||0; changed = true; }
+    if (data.xp) { if (typeof data.xp === 'string' && data.xp.startsWith('+')) playerState.xp += parseInt(data.xp.slice(1))||0; else playerState.xp += parseInt(data.xp)||0; changed = true; }
+    if (data.location) { playerState.location = data.location; changed = true; }
+    if (data.hungerNum !== undefined) { playerState.hungerNum = data.hungerNum; changed = true; }
+    updateStatusDisplay(changed);
   }
 
   function updateLingnet(items) {
     if (!items || !items.length) return;
+    lastLingnetUpdate = Date.now();
     var feed = document.getElementById('lingnetFeed');
     for (var i = items.length - 1; i >= 0; i--) {
       var item = items[i];
-      var div = document.createElement('div'); div.className = 'lingnet-item';
+      var div = document.createElement('div'); div.className = 'lingnet-item highlight';
       var tag = document.createElement('span');
-      tag.className = 'lingnet-tag ' + (item.tag === '公会' ? 'news' : (item.tag === '传闻' ? 'rumor' : 'danger'));
+      tag.className = 'lingnet-tag ' + (item.tag === '公会' ? 'news' : (item.tag === '传闻' ? 'rumor' : (item.tag === '旅人' ? 'traveler' : 'danger')));
       tag.textContent = item.tag || '消息'; div.appendChild(tag);
       div.appendChild(document.createTextNode(item.text));
       feed.insertBefore(div, feed.firstChild);
+      setTimeout(function(el){ el.classList.remove('highlight'); }, 3000);
     }
-    while (feed.children.length > 10) { feed.removeChild(feed.lastChild); }
+    while (feed.children.length > 12) { feed.removeChild(feed.lastChild); }
+    // 闪烁灵网红点
+    var badge = document.getElementById('lingnetBadge');
+    badge.style.display = 'inline-block';
+    setTimeout(function(){ badge.style.display = 'none'; }, 5000);
   }
 
-  function updateStatusDisplay() {
+  function flashStatElement(id) {
+    var el = document.getElementById(id); if (!el) return;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  function updateStatusDisplay(changed) {
+    var oldHp = document.getElementById('sHp').textContent;
+    var oldMp = document.getElementById('sMp').textContent;
+    var oldHunger = document.getElementById('sHunger').textContent;
+    var oldStamina = document.getElementById('sStamina').textContent;
+    var oldInjury = document.getElementById('sInjury').textContent;
+    var oldStatus = document.getElementById('sStatus').textContent;
+
     document.getElementById('sHp').textContent = playerState.hp + '%';
     document.getElementById('sMp').textContent = playerState.mp + '%';
     document.getElementById('sStamina').textContent = playerState.stamina;
     document.getElementById('sInjury').textContent = playerState.injury;
     document.getElementById('sHunger').textContent = playerState.hunger;
     document.getElementById('sStatus').textContent = playerState.status;
+    document.getElementById('sHpNum').textContent = playerState.hungerNum !== undefined ? '(' + playerState.hungerNum + ')' : '';
+
+    if (changed) {
+      if (document.getElementById('sHp').textContent !== oldHp) flashStatElement('sHp');
+      if (document.getElementById('sMp').textContent !== oldMp) flashStatElement('sMp');
+      if (document.getElementById('sHunger').textContent !== oldHunger) flashStatElement('sHunger');
+      if (document.getElementById('sStamina').textContent !== oldStamina) flashStatElement('sStamina');
+      if (document.getElementById('sInjury').textContent !== oldInjury) flashStatElement('sInjury');
+      if (document.getElementById('sStatus').textContent !== oldStatus) flashStatElement('sStatus');
+    }
   }
 
+  // ========== 实时心跳：饥饿 & 体力自动衰减 ==========
+  var HEARTBEAT_INTERVAL = 30000; // 30秒
+
+  function autoDecayHunger() {
+    if (playerState.hungerNum === undefined) playerState.hungerNum = 100;
+    playerState.hungerNum = Math.max(0, playerState.hungerNum - 5);
+
+    var newHunger;
+    if (playerState.hungerNum > 70) newHunger = '正常';
+    else if (playerState.hungerNum > 40) newHunger = '微饿';
+    else if (playerState.hungerNum > 10) newHunger = '饥饿';
+    else newHunger = '极度饥饿';
+
+    if (newHunger !== playerState.hunger) {
+      playerState.hunger = newHunger;
+      var ch = document.getElementById('sHunger');
+      ch.classList.remove('flash'); void ch.offsetWidth; ch.classList.add('flash');
+    }
+
+    // 体力衰减：饥饿时加速
+    var staminaDecay = (playerState.hungerNum <= 10) ? 2 : 0;
+    if (staminaDecay > 0) {
+      var staminas = ['饱满','正常','疲劳','疲惫'];
+      var idx = staminas.indexOf(playerState.stamina);
+      if (idx < staminas.length - 1 && Math.random() < 0.3) {
+        playerState.stamina = staminas[idx + 1];
+        var cs = document.getElementById('sStamina');
+        cs.classList.remove('flash'); void cs.offsetWidth; cs.classList.add('flash');
+      }
+    }
+
+    updateStatusDisplay(false);
+    document.getElementById('sHunger').textContent = playerState.hunger;
+    document.getElementById('sHpNum').textContent = '(' + playerState.hungerNum + ')';
+  }
+
+  // ========== 大陆灵网自动推送 ==========
+  function autoLingnetPush() {
+    var elapsed = Date.now() - lastLingnetUpdate;
+    if (elapsed < 60000) return; // AI刚更新过，不推送
+
+    var idx = Math.floor(Math.random() * LINGNET_POOL.length);
+    var item = LINGNET_POOL[idx];
+    var feed = document.getElementById('lingnetFeed');
+    var div = document.createElement('div'); div.className = 'lingnet-item highlight';
+    var tag = document.createElement('span');
+    tag.className = 'lingnet-tag ' + (item.tag === '公会' ? 'news' : (item.tag === '传闻' ? 'rumor' : (item.tag === '旅人' ? 'traveler' : 'danger')));
+    tag.textContent = item.tag; div.appendChild(tag);
+    div.appendChild(document.createTextNode(item.text));
+    feed.insertBefore(div, feed.firstChild);
+    setTimeout(function(el){ el.classList.remove('highlight'); }, 3000);
+    while (feed.children.length > 12) { feed.removeChild(feed.lastChild); }
+
+    var badge = document.getElementById('lingnetBadge');
+    badge.style.display = 'inline-block';
+    setTimeout(function(){ badge.style.display = 'none'; }, 5000);
+  }
+
+  // 心跳循环
+  setInterval(function() {
+    if (!isGenerating) autoDecayHunger();
+  }, HEARTBEAT_INTERVAL);
+
+  // 灵网推送：90-180秒随机
+  function scheduleLingnet() {
+    autoLingnetPush();
+    var delay = 90000 + Math.floor(Math.random() * 90000);
+    setTimeout(scheduleLingnet, delay);
+  }
+  setTimeout(scheduleLingnet, 120000); // 首次2分钟后
+
   window.toggleStatusPanel = function() {
-    var panel = document.getElementById('statusPanel'); panel.classList.toggle('open'); updateStatusDisplay();
+    var panel = document.getElementById('statusPanel'); panel.classList.toggle('open'); updateStatusDisplay(false);
   };
 
   function typeMessage(text, speed) {
