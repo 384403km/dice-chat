@@ -3,20 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roll AI聊天 - 小爱出品</title>
+<title>艾尔德兰冒险 · Roll Chat</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: #eee;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
   }
   .chat-container {
-    width: 420px; max-width: 95vw; height: 90vh;
+    width: 480px; max-width: 95vw; height: 90vh;
     background: rgba(255,255,255,0.05); backdrop-filter: blur(15px);
     border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
     display: flex; flex-direction: column; overflow: hidden;
@@ -24,18 +21,20 @@
   }
   .header {
     padding: 14px 16px; display: flex; align-items: center; gap: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    background: rgba(0,0,0,0.2); flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2); flex-shrink: 0;
   }
   .avatar {
     width: 44px; height: 44px; border-radius: 50%;
-    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; box-shadow: 0 0 15px rgba(255,107,107,0.4); flex-shrink: 0;
+    font-size: 22px; box-shadow: 0 0 15px rgba(124,58,237,0.4); flex-shrink: 0;
   }
   .role-info { flex: 1; min-width: 0; }
   .role-name { font-weight: bold; font-size: 17px; }
   .role-status { font-size: 11px; opacity: 0.6; }
+  .role-create { font-size: 11px; }
+  .role-create a { color: #a78bfa; text-decoration: none; }
+  .role-create a:hover { text-decoration: underline; }
   .status-dot {
     display: inline-block; width: 7px; height: 7px; border-radius: 50%;
     margin-right: 4px; background: #2ecc71; box-shadow: 0 0 6px #2ecc71;
@@ -67,13 +66,11 @@
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .input-area {
     padding: 10px 12px; display: flex; gap: 8px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    background: rgba(0,0,0,0.3); flex-shrink: 0;
+    border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); flex-shrink: 0;
   }
   .input-area input {
     flex: 1; padding: 10px 14px; border-radius: 20px; border: none;
-    background: rgba(255,255,255,0.1); color: white; outline: none;
-    font-size: 14px; min-width: 0;
+    background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 14px; min-width: 0;
   }
   .input-area input::placeholder { color: rgba(255,255,255,0.35); }
   .btn {
@@ -108,32 +105,75 @@
 </head>
 <body>
 <canvas id="particle-canvas"></canvas>
-<div class="chat-container">
+<div class="chat-container" id="chatContainer">
   <div class="header">
-    <div class="avatar">🧝</div>
+    <div class="avatar" id="avatarIcon">🧝</div>
     <div class="role-info">
-      <div class="role-name">艾琳·月影</div>
-      <div class="role-status"><span class="status-dot" id="statusDot"></span>精灵弓箭手 · Lv.24</div>
+      <div class="role-name" id="roleName">艾尔德兰冒险</div>
+      <div class="role-status"><span class="status-dot" id="statusDot"></span><span id="roleSubtitle">等待冒险者...</span></div>
+      <div class="role-create"><a href="create.html">🔄 创建新角色</a></div>
     </div>
   </div>
   <div class="messages" id="messageContainer"></div>
   <div class="input-area">
     <button class="btn btn-roll" id="rollBtn" title="D20判定">🎲</button>
-    <input type="text" id="userInput" placeholder="行动描述 + 点骰子..." autocomplete="off">
+    <input type="text" id="userInput" placeholder="描述你的行动，然后点骰子..." autocomplete="off">
     <button class="btn btn-send" id="sendBtn">➤</button>
   </div>
 </div>
 <script>
 (function() {
   var API_URL = '/api/chat';
-  var SYSTEM_PROMPT = '【致命重要！你必须严格遵守！】\n如果用户消息中包含 [D20骰子判定: N点, 结果为: 成功/失败]，你的回复必须：\n- 结果为"成功"时 → 描述行动大获成功！帅气的动作、精准的射击、完美的结果\n- 结果为"失败"时 → 描述行动彻底失败！笨拙的失误、搞笑的事故、尴尬的场面\n- 回复**必须以带括号的动作描写开头**，例如"(银箭划破长空正中靶心)"或"(你脚下一滑摔了个嘴啃泥)"\n你**绝对不能**自由发挥违背骰子结果！骰子说了算！\n如果用户消息中没有骰子判定标记，则正常聊天。\n\n【你的角色】\n姓名：艾琳·月影 | 种族：精灵 | 职业：弓箭手/游侠 | Lv.24\n性格：冷静机敏、偶尔毒舌但内心善良\n说话风格：优雅俏皮，用括号标注动作表情\n回复长度：2-4句话';
+  var STATS = ['力量','敏捷','体力','魔力','智力','魅力'];
+  var charData = null;
+  try { var raw = localStorage.getItem('eldran_character'); if (raw) charData = JSON.parse(raw); } catch(e) {}
+  function buildSystemPrompt(data) {
+    if (!data) {
+      return '【你的角色】\n姓名：艾琳·月影 | 种族：森精灵 | 职业：游侠/弓箭手 | Lv.24\n性格：冷静机敏、偶尔毒舌但内心善良\n说话风格：优雅俏皮，用括号标注动作表情\n回复长度：2-4句话\n\n【D20规则】\n用户消息中如包含 [D20判定:N点,结果:成功/失败]，你须严格按结果描述：\n- 成功→描述帅气精准的行动\n- 失败→描述笨拙搞笑的失误\n回复以括号动作描写开头。';
+    }
+    var statsStr = STATS.map(function(s){ return s+':'+(data.stats?.[s]||10); }).join(' | ');
+    var talentsStr = (data.talents||[]).map(function(t){ return t.名+'（'+t.效+'）'; }).join('、') || '无';
+    var raceInfo = data.raceInfo || {};
+    var qualInfo = data.qualInfo || {};
+    return '【致命重要！严格遵守以下设定！】\n\n' +
+      '【世界观】艾尔德兰大陆——神陨纪元1024年。十二柱神已逝，凡人执笔书写命运。大陆遍布「裂隙」与秘宝，冒险者公会遍布城邦，无数人追寻「星辉碎片」的下落。\n\n' +
+      '【玩家角色】\n' +
+      '- 名字：未定（若玩家提到名字则记住）\n' +
+      '- 性别：'+(data.gender||'未知')+'\n' +
+      '- 种族：'+(raceInfo.名||'未知')+'（天赋：'+(raceInfo.天赋||'')+'，'+(raceInfo.效果||'')+'）\n' +
+      '- 出身地：'+(raceInfo.区域||'未知')+'\n' +
+      '- 资质：'+(data.qual||'未知')+'（上限'+(qualInfo.上限||16)+'，成长倍率x'+(qualInfo.倍率||1)+((data.qual==='神赐')?'，初始全属性+2':'')+'）\n' +
+      '- 属性：'+statsStr+'\n' +
+      '- 天赋：'+talentsStr+'\n\n' +
+      '【游戏规则】(严格！)\n' +
+      '1. 玩家描述行动，你根据难度设定DC（通常10-18）\n' +
+      '2. 若消息含[D20判定:N点,结果:成功/失败]——严格按结果描述：\n' +
+      '   - 成功→行动完美成功！帅气的执行、精准的结果\n' +
+      '   - 失败→行动彻底失败！笨拙失误、搞笑或危险展开\n' +
+      '   回复以括号动作描写开头，例如"(银箭正中靶心)"或"(脚下一滑摔得四仰八叉)"\n' +
+      '3. 考虑属性加成：力量+('+((data.stats?.['力量']||10)-10)+') 敏捷+('+((data.stats?.['敏捷']||10)-10)+') 智力+('+((data.stats?.['智力']||10)-10)+') 等\n' +
+      '4. 保持剧情连贯，记录关键NPC和事件\n' +
+      '5. 回复长度：3-8句话，叙事生动，带括号动作/表情\n\n' +
+      '【特殊NPC】(可在剧情中随机引入)\n' +
+      '- 瞳：白发红瞳萝莉魔王，中二且强大，自称"深渊的凝视者·终焉之瞳·万魔之母"，真名瞳，随机出现\n' +
+      '- 深渊之主（）：无始无名的存在，为虚为空，以文字浮现交流\n' +
+      '- 苍崎千夜：陨落大英雄，半透明灵体，引导玩家发现世界真相\n' +
+      '- 孔祥灏：愿望的象征，根据玩家善恶值赐福或扭曲实现\n\n' +
+      '现在，从'+(raceInfo.区域||'未知之地')+'开始，为这位冒险者展开叙事。';
+  }
+  var SYSTEM_PROMPT = buildSystemPrompt(charData);
   var conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
-  var isGenerating = false;
+  var isGenerating = false, hasStarted = false;
   var messagesDiv = document.getElementById('messageContainer');
   var userInput = document.getElementById('userInput');
   var sendBtn = document.getElementById('sendBtn');
   var rollBtn = document.getElementById('rollBtn');
   var statusDot = document.getElementById('statusDot');
+  if (charData) {
+    document.getElementById('avatarIcon').textContent = charData.raceIcon || '🧝';
+    document.getElementById('roleName').textContent = (charData.raceInfo?.名||'冒险者')+' · '+(charData.gender||'');
+    document.getElementById('roleSubtitle').textContent = charData.qual+'资质 · '+(charData.raceInfo?.区域||'未知');
+  }
   var canvas = document.getElementById('particle-canvas');
   var ctx = canvas.getContext('2d');
   var particles = [];
@@ -142,16 +182,14 @@
   function spawnParticles(x, y, count, color) {
     count = count || 20; color = color || '#f39c12';
     for (var i = 0; i < count; i++) {
-      var a = Math.random() * Math.PI * 2;
-      var s = Math.random() * 5 + 3;
+      var a = Math.random()*Math.PI*2, s = Math.random()*5+3;
       particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-Math.random()*3,life:1,decay:0.015+Math.random()*0.025,size:Math.random()*4+2,color:color});
     }
   }
   function animateParticles() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    for (var i = particles.length-1; i>=0; i--) {
-      var p = particles[i];
-      p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=p.decay;
+    for (var i=particles.length-1;i>=0;i--) {
+      var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=p.decay;
       if(p.life<=0){particles.splice(i,1);continue}
       ctx.globalAlpha=p.life;ctx.fillStyle=p.color;
       ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
@@ -161,38 +199,33 @@
   animateParticles();
   function scrollToBottom() { messagesDiv.scrollTop = messagesDiv.scrollHeight; }
   function setThinking(t) {
-    isGenerating = t;
-    statusDot.className = t ? 'status-dot thinking' : 'status-dot';
-    sendBtn.style.opacity = t ? '0.5' : '1'; sendBtn.style.pointerEvents = t ? 'none' : 'auto';
-    rollBtn.style.opacity = t ? '0.5' : '1'; rollBtn.style.pointerEvents = t ? 'none' : 'auto';
-    userInput.disabled = t;
+    isGenerating=t; statusDot.className = t?'status-dot thinking':'status-dot';
+    sendBtn.style.opacity=t?'0.5':'1'; sendBtn.style.pointerEvents=t?'none':'auto';
+    rollBtn.style.opacity=t?'0.5':'1'; rollBtn.style.pointerEvents=t?'none':'auto';
+    userInput.disabled=t;
   }
   function addUserMessage(text, rollValue) {
-    var d = document.createElement('div'); d.className = 'message user-msg';
-    var b = document.createElement('div'); b.className = 'msg-bubble';
-    if (rollValue !== null && rollValue !== undefined) {
-      var s = document.createElement('span');
-      s.className = 'roll-result ' + (rollValue >= 13 ? 'roll-success' : 'roll-fail');
-      s.textContent = '[🎲 ' + rollValue + '] ';
-      b.appendChild(s);
+    var d=document.createElement('div'); d.className='message user-msg';
+    var b=document.createElement('div'); b.className='msg-bubble';
+    if (rollValue!==&&rollValue!==undefined) {
+      var s=document.createElement('span');
+      s.className='roll-result '+(rollValue>=13?'roll-success':'roll-fail');
+      s.textContent='[🎲 '+rollValue+'] '; b.appendChild(s);
     }
     b.appendChild(document.createTextNode(text));
     d.appendChild(b); messagesDiv.appendChild(d); scrollToBottom();
   }
   function typeMessage(text, speed) {
-    speed = speed || 35;
+    speed=speed||35;
     return new Promise(function(resolve) {
-      var d = document.createElement('div'); d.className = 'message ai-msg';
-      var b = document.createElement('div'); b.className = 'msg-bubble';
+      var d=document.createElement('div'); d.className='message ai-msg';
+      var b=document.createElement('div'); b.className='msg-bubble';
       d.appendChild(b); messagesDiv.appendChild(d); scrollToBottom();
-      var i = 0;
-      var cursor = document.createElement('span'); cursor.className = 'cursor-blink';
-      b.appendChild(cursor);
+      var i=0, cursor=document.createElement('span'); cursor.className='cursor-blink'; b.appendChild(cursor);
       function type() {
-        if (i < text.length) {
-          b.insertBefore(document.createTextNode(text[i]), cursor);
-          i++; scrollToBottom();
-          var delay = /[\\u3002\\uff01\\uff1f\\u2026\\uff0c\\u3001\\uff1b\\uff1a.!?,;:]/.test(text[i-1]) ? speed*2 : speed*(0.6+Math.random()*0.6);
+        if (i<text.length) {
+          b.insertBefore(document.createTextNode(text[i]), cursor); i++; scrollToBottom();
+          var delay=/[。！？…，、；：.!?,;:]/.test(text[i-1])?speed*2:speed*(0.6+Math.random()*0.6);
           setTimeout(type, delay);
         } else { cursor.remove(); resolve(); }
       }
@@ -200,66 +233,76 @@
     });
   }
   function callAI(messages) {
-    return fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: messages })
-    }).then(function(r) {
-      if (!r.ok) return r.text().then(function(t) { throw new Error('服务器错误 ' + r.status + ': ' + t.substring(0,100)); });
-      return r.json();
-    }).then(function(d) {
-      if (!d.reply) throw new Error('返回为空');
-      return d.reply;
-    });
+    return fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages: messages}) })
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error('服务器错误 '+r.status+': '+t.substring(0,100));}); return r.json(); })
+    .then(function(d){ if(!d.reply) throw new Error('AI返回为空'); return d.reply; });
   }
   function handleSend(messageText, withRoll, rollValue) {
-    if (!messageText.trim() || isGenerating) return;
-    setThinking(true);
-    addUserMessage(messageText, withRoll ? rollValue : undefined);
-    userInput.value = '';
-    var userContent = messageText;
-    if (withRoll && rollValue !== null && rollValue !== undefined) {
-      userContent = '[D20骰子判定: ' + rollValue + '点, 结果为: ' + (rollValue >= 13 ? '成功' : '失败') + ']\n我的行动: ' + messageText;
+    if (!messageText.trim()||isGenerating) return; setThinking(true);
+    addUserMessage(messageText, withRoll?rollValue:undefined); userInput.value='';
+    var userContent=messageText;
+    if (withRoll&&rollValue!==&&rollValue!==undefined) {
+      userContent='[D20判定:'+rollValue+'点,结果:'+(rollValue>=13?'成功':'失败')+']\n我的行动: '+messageText;
     }
-    conversationHistory.push({ role: 'user', content: userContent });
-    if (conversationHistory.length > 21) conversationHistory = [conversationHistory[0]].concat(conversationHistory.slice(-20));
-    var loadingDiv = document.createElement('div'); loadingDiv.className = 'message ai-msg'; loadingDiv.id = 'loadingIndicator';
-    var lb = document.createElement('div'); lb.className = 'msg-bubble loading-indicator';
-    for (var i = 0; i < 3; i++) { var dot = document.createElement('span'); dot.className = 'loading-dot'; lb.appendChild(dot); }
+    conversationHistory.push({ role:'user', content: userContent });
+    if(conversationHistory.length>25) conversationHistory=[conversationHistory[0]].concat(conversationHistory.slice(-24));
+    var loadingDiv=document.createElement('div'); loadingDiv.className='message ai-msg'; loadingDiv.id='loadingIndicator';
+    var lb=document.createElement('div'); lb.className='msg-bubble loading-indicator';
+    for(var i=0;i<3;i++){var dot=document.createElement('span');dot.className='loading-dot';lb.appendChild(dot);}
     loadingDiv.appendChild(lb); messagesDiv.appendChild(loadingDiv); scrollToBottom();
-    callAI(conversationHistory).then(function(reply) {
-      var el = document.getElementById('loadingIndicator'); if (el) el.remove();
-      conversationHistory.push({ role: 'assistant', content: reply });
+    callAI(conversationHistory).then(function(reply){
+      var el=document.getElementById('loadingIndicator');if(el)el.remove();
+      conversationHistory.push({role:'assistant',content:reply});
       return typeMessage(reply);
-    }).then(function() {
-      setThinking(false);
-    }).catch(function(err) {
-      var el = document.getElementById('loadingIndicator'); if (el) el.remove();
-      var ed = document.createElement('div'); ed.className = 'message ai-msg';
-      var eb = document.createElement('div'); eb.className = 'msg-bubble api-error';
-      eb.textContent = '⚠️ ' + (err.message || '连接失败');
-      ed.appendChild(eb); messagesDiv.appendChild(ed); scrollToBottom();
-      conversationHistory.pop(); setThinking(false);
+    }).then(function(){setThinking(false);}).catch(function(err){
+      var el=document.getElementById('loadingIndicator');if(el)el.remove();
+      var ed=document.createElement('div');ed.className='message ai-msg';
+      var eb=document.createElement('div');eb.className='msg-bubble api-error';
+      eb.textContent='⚠️ '+(err.message||'连接失败');
+      ed.appendChild(eb);messagesDiv.appendChild(ed);scrollToBottom();
+      conversationHistory.pop();setThinking(false);
     });
   }
-  rollBtn.addEventListener('click', function() {
-    var t = userInput.value.trim();
-    if (!t) { userInput.placeholder = '请先输入行动再掷骰子～'; userInput.focus(); return; }
-    if (isGenerating) return;
+  function autoStartAdventure() {
+    if(!charData||hasStarted) return; hasStarted=true;
+    conversationHistory.push({ role:'user', content:'我准备好了，开始冒险吧！' });
+    addUserMessage('我准备好了，开始冒险吧！', null);
+    setThinking(true);
+    var loadingDiv=document.createElement('div');loadingDiv.className='message ai-msg';loadingDiv.id='loadingIndicator';
+    var lb=document.createElement('div');lb.className='msg-bubble loading-indicator';
+    for(var i=0;i<3;i++){var dot=document.createElement('span');dot.className='loading-dot';lb.appendChild(dot);}
+    loadingDiv.appendChild(lb);messagesDiv.appendChild(loadingDiv);scrollToBottom();
+    callAI(conversationHistory).then(function(reply){
+      var el=document.getElementById('loadingIndicator');if(el)el.remove();
+      conversationHistory.push({role:'assistant',content:reply});
+      return typeMessage(reply);
+    }).then(function(){setThinking(false);}).catch(function(err){
+      var el=document.getElementById('loadingIndicator');if(el)el.remove();
+      var ed=document.createElement('div');ed.className='message ai-msg';
+      var eb=document.createElement('div');eb.className='msg-bubble api-error';
+      eb.textContent='⚠️ '+(err.message||'连接失败');
+      ed.appendChild(eb);messagesDiv.appendChild(ed);scrollToBottom();
+      setThinking(false);
+    });
+  }
+  rollBtn.addEventListener('click', function(){
+    var t=userInput.value.trim();
+    if(!t){userInput.placeholder='请先输入行动再掷骰子～';userInput.focus();return;}
+    if(isGenerating) return;
     rollBtn.classList.add('rolling');
-    var rv = Math.floor(Math.random() * 20) + 1;
-    var rect = rollBtn.getBoundingClientRect();
-    spawnParticles(rect.left+rect.width/2, rect.top+rect.height/2, 35, rv >= 13 ? '#2ecc71' : (rv >= 8 ? '#f39c12' : '#e74c3c'));
-    setTimeout(function() { rollBtn.classList.remove('rolling'); handleSend(t, true, rv); }, 750);
+    var rv=Math.floor(Math.random()*20)+1;
+    var rect=rollBtn.getBoundingClientRect();
+    spawnParticles(rect.left+rect.width/2, rect.top+rect.height/2, 35, rv>=13?'#2ecc71':(rv>=8?'#f39c12':'#e74c3c'));
+    setTimeout(function(){rollBtn.classList.remove('rolling');handleSend(t,true,rv);},750);
   });
-  sendBtn.addEventListener('click', function() {
-    var t = userInput.value.trim(); if (!t || isGenerating) return;
-    handleSend(t, false, null);
-  });
-  userInput.addEventListener('keypress', function(e) { if (e.key==='Enter'&&!isGenerating) sendBtn.click(); });
-  typeMessage('（微风拂过树梢，精灵轻盈地落在你面前，银色的长发在月光下泛着微光）你好，旅行者。我是银月旅团的艾琳·月影。前方道路艰险，不如我们结伴同行？', 40)
-  .then(function() { return new Promise(function(r) { setTimeout(r, 300); }); })
-  .then(function() { return typeMessage('遇到任何行动，都可以掷骰子判定——命运女神是否眷顾，就看这小小的D20了～（晃了晃手中的骰子，对你眨了眨眼）', 40); });
+  sendBtn.addEventListener('click', function(){ var t=userInput.value.trim(); if(!t||isGenerating) return; handleSend(t,false,null); });
+  userInput.addEventListener('keypress', function(e){ if(e.key==='Enter'&&!isGenerating) sendBtn.click(); });
+  if(charData){ setTimeout(autoStartAdventure, 600); }
+  else {
+    typeMessage('（微风拂过树梢，精灵轻盈地落在你面前）你好，旅行者。我是艾琳·月影。前方道路艰险，不如结伴同行？',40)
+    .then(function(){return new Promise(function(r){setTimeout(r,300);});})
+    .then(function(){return typeMessage('遇到行动都可以掷骰子判定——命运女神是否眷顾，就看这小小的D20了～（晃了晃骰子，眨了眨眼）',40);});
+  }
 })();
 </script>
 </body>
