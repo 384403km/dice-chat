@@ -1,0 +1,10 @@
+{
+  "name": "roll-chat",
+  "version": "1.0.0",
+  "description": "D20骰子 AI 角色扮演聊天",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {}
+}
