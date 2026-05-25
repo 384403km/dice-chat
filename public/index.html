@@ -1,143 +1,740 @@
-艾尔德兰大陆 · Roll Chat
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>艾尔德兰大陆 · Roll Chat</title>
+<style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0d1117; color: #e6e6e6; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; min-height: 100vh; }
-#app { max-width: 720px; margin: 0 auto; padding: 16px; }
+:root { --bg: #0d1117; --panel: #161b22; --border: #30363d; --accent: #58a6ff; --accent2: #6bb5ff; --text: #e6e6e6; --muted: #8b949e; --danger: #ff6b6b; --warn: #ffd93d; --success: #3fb950; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+#app { max-width: 720px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; height: 100vh; }
+
 /* Header */
-.header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; margin-bottom: 12px; cursor: pointer; }
-.header .avatar { width: 44px; height: 44px; border-radius: 50%; background: #1f2937; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 2px solid #30363d; }
+.header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.header .avatar { width: 38px; height: 38px; border-radius: 50%; background: #1f2937; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid var(--border); cursor: pointer; flex-shrink: 0; }
 .header .info { flex: 1; min-width: 0; }
-.header .info .name { font-size: 15px; font-weight: 600; }
-.header .info .race { font-size: 11px; color: #8b949e; }
-.header .status-mini { display: flex; gap: 8px; font-size: 11px; }
-.header .status-mini span { padding: 2px 8px; border-radius: 10px; background: #21262d; border: 1px solid #30363d; }
-.header .status-mini .hp-bar { color: #ff6b6b; }
-.header .status-mini .mp-bar { color: #6bb5ff; }
-.header .expand-btn { font-size: 18px; color: #8b949e; padding: 4px; border: none; background: none; cursor: pointer; }
+.header .info .name { font-size: 14px; font-weight: 600; }
+.header .info .race { font-size: 11px; color: var(--muted); }
+.header .status-mini { display: flex; gap: 6px; font-size: 11px; }
+.header .status-mini span { padding: 2px 6px; border-radius: 8px; background: #21262d; border: 1px solid var(--border); }
+.header .status-mini .hp-bar { color: var(--danger); }
+.header .status-mini .mp-bar { color: var(--accent2); }
+.header .expand-btn { font-size: 18px; color: var(--muted); padding: 4px; border: none; background: none; cursor: pointer; }
+
 /* Session Switcher */
-.session-switcher { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
-.session-switcher select { flex: 1; background: #161b22; color: #e6e6e6; border: 1px solid #30363d; border-radius: 8px; padding: 6px 10px; font-size: 13px; }
-.session-switcher button { background: #21262d; color: #8b949e; border: 1px solid #30363d; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
-.session-switcher button:hover { background: #30363d; color: #e6e6e6; }
+.session-switcher { display: flex; gap: 6px; align-items: center; padding: 6px 16px; background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.session-switcher select { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+.session-switcher button { background: #21262d; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.session-switcher button:hover { background: var(--border); color: var(--text); }
+
 /* Status Panel */
-.status-panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.status-panel { display: none; background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 16px; flex-shrink: 0; }
 .status-panel.open { display: block; }
-.status-panel h3 { font-size: 13px; color: #8b949e; margin-bottom: 8px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
-.status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-.status-item { background: #21262d; border-radius: 8px; padding: 8px; text-align: center; }
-.status-item .val { font-size: 20px; font-weight: 700; transition: color 0.3s; }
-.status-item .val.flash { animation: flashGreen 0.6s ease; }
-.status-item .lbl { font-size: 10px; color: #8b949e; margin-top: 2px; }
-.status-item .val.hp { color: #ff6b6b; }
-.status-item .val.mp { color: #6bb5ff; }
-.status-item .val.stamina { color: #ffd93d; }
+.status-panel h3 { font-size: 12px; color: var(--muted); margin-bottom: 6px; border-bottom: 1px solid #21262d; padding-bottom: 4px; }
+.status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.status-item { background: #21262d; border-radius: 6px; padding: 6px; text-align: center; }
+.status-item .val { font-size: 16px; font-weight: 700; }
+.status-item .lbl { font-size: 9px; color: var(--muted); }
+.status-item .val.hp { color: var(--danger); }
+.status-item .val.mp { color: var(--accent2); }
+.status-item .val.stamina { color: var(--warn); }
 .status-item .val.hunger { color: #ff9f43; }
 .status-item .val.gold { color: #ffd700; }
 .status-item .val.xp { color: #a371f7; }
-@keyframes flashGreen { 0% { color: #3fb950; text-shadow: 0 0 8px #3fb950; } 100% { color: inherit; text-shadow: none; } }
+.status-item .val.flash { animation: flashGreen 0.6s ease; }
+.status-item .val.danger-flash { color: var(--danger) !important; animation: flashRed 0.6s ease; }
+@keyframes flashGreen { 0% { color: var(--success); text-shadow: 0 0 8px var(--success); } 100% { color: inherit; text-shadow: none; } }
+@keyframes flashRed { 0% { color: var(--danger); text-shadow: 0 0 8px var(--danger); } 100% { color: inherit; text-shadow: none; } }
 .full-width { grid-column: 1 / -1; text-align: left; }
 .full-width .lbl { display: inline; }
-.full-width .val { display: inline; font-size: 14px; margin-left: 4px; }
+.full-width .val { display: inline; font-size: 13px; margin-left: 4px; }
+
 /* LingNet */
-.lingnet { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 10px; max-height: 180px; overflow-y: auto; font-size: 12px; }
-.lingnet .msg { padding: 4px 0; border-bottom: 1px solid #21262d; }
-.lingnet .msg:last-child { border-bottom: none; }
-.lingnet .msg .tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 6px; font-weight: 600; }
-.lingnet .msg .tag.guild { background: #1a3a2a; color: #3fb950; }
-.lingnet .msg .tag.rumor { background: #2a1a3a; color: #a371f7; }
-.lingnet .msg .tag.warning { background: #3a1a1a; color: #ff6b6b; }
-.lingnet .msg .tag.traveler { background: #2a2a1a; color: #ffd93d; }
-.lingnet .msg.new { background: rgba(255,215,0,0.08); }
-/* Chat */
-.chat { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
-.msg { padding: 10px 14px; border-radius: 12px; max-width: 90%; line-height: 1.6; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-.msg.ai { background: #161b22; border: 1px solid #21262d; align-self: flex-start; }
-.msg.ai .narrative { margin-bottom: 8px; }
-.msg.user { background: #1a3a4a; border: 1px solid #1f6f8b; align-self: flex-end; }
+.lingnet { background: var(--bg); border: 1px solid #21262d; border-radius: 6px; padding: 8px; max-height: 150px; overflow-y: auto; font-size: 11px; }
+.lingnet .lmsg { padding: 3px 0; border-bottom: 1px solid #21262d; }
+.lingnet .lmsg:last-child { border-bottom: none; }
+.lingnet .lmsg .tag { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; margin-right: 5px; font-weight: 600; }
+.lingnet .lmsg .tag.guild { background: #1a3a2a; color: var(--success); }
+.lingnet .lmsg .tag.rumor { background: #2a1a3a; color: #a371f7; }
+.lingnet .lmsg .tag.warning { background: #3a1a1a; color: var(--danger); }
+.lingnet .lmsg .tag.traveler { background: #2a2a1a; color: var(--warn); }
+.lingnet .lmsg.new { background: rgba(255,215,0,0.06); animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.lingnet-indicator { position: relative; display: inline-block; }
+.lingnet-indicator .badge { position: absolute; top: -3px; right: -5px; width: 7px; height: 7px; background: var(--danger); border-radius: 50%; display: none; }
+.lingnet-indicator .badge.show { display: block; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Chat Area */
+.chat-area { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.chat-area::-webkit-scrollbar { width: 4px; }
+.chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.msg { padding: 10px 14px; border-radius: 12px; max-width: 88%; line-height: 1.6; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+.msg.ai { background: var(--panel); border: 1px solid #21262d; align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.user { background: #1a3a4a; border: 1px solid #1f6f8b; align-self: flex-end; border-bottom-right-radius: 4px; }
 .msg.system { background: #1a1a2e; border: 1px solid #2a2a4e; align-self: center; text-align: center; font-size: 12px; color: #a371f7; }
+.msg.gameover { background: rgba(255,0,0,0.1); border: 2px solid var(--danger); color: var(--danger); align-self: center; text-align: center; font-weight: bold; font-size: 16px; padding: 16px; }
+
 /* Choices */
-.choices { display: flex; flex-direction: column; gap: 6px; }
-.choice-btn { background: #21262d; border: 1px solid #30363d; border-radius: 8px; padding: 8px 12px; text-align: left; font-size: 13px; color: #c9d1d9; cursor: pointer; transition: all 0.2s; }
-.choice-btn:hover { background: #30363d; border-color: #58a6ff; }
-.choice-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #161b22; }
-.choice-btn .key { display: inline-block; width: 22px; height: 22px; border-radius: 4px; background: #30363d; text-align: center; line-height: 22px; font-size: 11px; font-weight: 700; margin-right: 8px; color: #58a6ff; }
+.choices { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.choice-btn { background: #21262d; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; text-align: left; font-size: 13px; color: #c9d1d9; cursor: pointer; transition: all 0.2s; }
+.choice-btn:hover:not(.used) { background: var(--border); border-color: var(--accent); }
+.choice-btn.used { opacity: 0.4; cursor: default; }
+.choice-btn .key { display: inline-block; width: 20px; height: 20px; border-radius: 3px; background: var(--border); text-align: center; line-height: 20px; font-size: 10px; font-weight: 700; margin-right: 6px; color: var(--accent); }
 .choice-btn.free .key { background: #3a2a1a; color: #ff9f43; }
+
 /* Input */
-.input-area { display: flex; gap: 8px; }
-.input-area textarea { flex: 1; background: #161b22; color: #e6e6e6; border: 1px solid #30363d; border-radius: 8px; padding: 10px; font-size: 14px; resize: none; font-family: inherit; min-height: 44px; }
+.input-area { display: flex; gap: 8px; padding: 10px 16px; background: var(--panel); border-top: 1px solid var(--border); flex-shrink: 0; }
+.input-area textarea { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px; resize: none; font-family: inherit; min-height: 40px; outline: none; }
+.input-area textarea:focus { border-color: var(--accent); }
 .input-area textarea::placeholder { color: #484f58; }
-.input-area button { background: #238636; color: #fff; border: none; border-radius: 8px; padding: 0 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.input-area button { background: #238636; color: #fff; border: none; border-radius: 6px; padding: 0 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .input-area button:hover { background: #2ea043; }
 .input-area button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
-/* Game Over */
+.input-area.disabled textarea, .input-area.disabled button { opacity: 0.5; pointer-events: none; }
+
+/* Game Over Overlay */
 .game-over-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
 .game-over-overlay.show { display: flex; }
-.game-over-overlay h2 { font-size: 32px; color: #ff0000; margin-bottom: 8px; }
-.game-over-overlay p { color: #8b949e; margin-bottom: 16px; }
-.game-over-overlay button { background: #ff6b6b; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-/* Flash */
-@keyframes panelFlash { 0% { box-shadow: 0 0 16px rgba(88,166,255,0.6); } 100% { box-shadow: none; } }
+.game-over-overlay h2 { font-size: 28px; color: var(--danger); margin-bottom: 8px; }
+.game-over-overlay p { color: var(--muted); margin-bottom: 16px; font-size: 14px; }
+.game-over-overlay button { background: var(--danger); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+
+@keyframes panelFlash { 0% { box-shadow: 0 0 12px rgba(88,166,255,0.5); } 100% { box-shadow: none; } }
 .status-panel.flash { animation: panelFlash 0.8s ease; }
-/* LingNet badge */
-.lingnet-indicator { position: relative; display: inline-block; }
-.lingnet-indicator .badge { position: absolute; top: -4px; right: -6px; width: 8px; height: 8px; background: #ff6b6b; border-radius: 50%; display: none; }
-.lingnet-indicator .badge.show { display: block; }
-/* Misc */
-.loading { text-align: center; padding: 20px; color: #8b949e; }
-.loading::after { content: '...'; animation: dots 1.5s steps(3, end) infinite; }
-@keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
-::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0d1117; } ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-Create a new character
-Adventurer Creation · Roll Chat
-:root { --bg: #0d1117; --panel: #161b22; --border: #30363d; --accent: #58a6ff; }
-body { background: var(--bg); color: #e6e6e6; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; padding: 20px; }
-#app { max-width: 500px; width: 100%; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-h1 { font-size: 22px; margin: 0 0 8px; color: #58a6ff; }
-.subtitle { color: #8b949e; font-size: 13px; margin-bottom: 20px; }
-/* Step indicator */
-.steps { display: flex; gap: 8px; margin-bottom: 20px; }
-.step { flex: 1; text-align: center; font-size: 11px; color: #484f58; padding: 6px; border-bottom: 2px solid var(--border); transition: all 0.3s; }
-.step.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.step.done { color: #3fb950; border-bottom-color: #3fb950; }
-/* Content */
-.step-content { min-height: 120px; }
-.step-content h3 { font-size: 16px; margin-bottom: 12px; }
-.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.option-btn { background: #21262d; border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; font-size: 14px; color: #c9d1d9; cursor: pointer; transition: background 0.2s; }
-.option-btn:hover { background: #30363d; }
-.option-btn.selected { border-color: var(--accent); background: #1a2a3a; color: var(--accent); }
-input.name-input { width: 100%; background: #21262d; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 16px; color: #e6e6e6; }
-input.name-input:focus { border-color: var(--accent); outline: none; }
-.nav-btns { display: flex; gap: 10px; margin-top: 20px; }
-.nav-btns button { flex: 1; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; font-weight: 600; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #6eb9ff; }
-.btn-secondary { background: #21262d; color: #8b949e; border: 1px solid var(--border); }
-.btn-secondary:hover { background: #30363d; color: #e6e6e6; }
-.btn-success { background: #238636; color: #fff; }
-.btn-success:hover { background: #2ea043; }
-/* Dice display */
-.dice-display { text-align: center; padding: 20px; }
-.dice-display .number { font-size: 64px; font-weight: 900; color: #ffd700; display: block; animation: rollDice 0.8s ease-out; }
-@keyframes rollDice { 0% { transform: rotate(0deg) scale(0); opacity: 0; } 50% { transform: rotate(360deg) scale(1.3); } 100% { transform: rotate(720deg) scale(1); opacity: 1; } }
-.dice-display .label { color: #8b949e; font-size: 14px; margin-top: 8px; }
-/* Summary */
-.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.summary-item { background: #21262d; border-radius: 8px; padding: 10px; }
-.summary-item .key { font-size: 10px; color: #484f58; }
-.summary-item .val { font-size: 14px; font-weight: 600; }
-body {
-font-family: system-ui, -apple-system, sans-serif;
-background: #0d1117;
-color: #e6e6e6;
-margin: 0;
-padding: 16px;
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="avatar" id="avatarBtn" title="点击展开状态">🧝</div>
+    <div class="info">
+      <div class="name" id="charName">艾尔德兰大陆</div>
+      <div class="status-mini">
+        <span class="hp-bar" id="miniHP">❤ 100%</span>
+        <span class="mp-bar" id="miniMP">💎 100%</span>
+      </div>
+    </div>
+    <button class="expand-btn" id="expandBtn" title="展开/收起状态">📋</button>
+  </div>
+
+  <!-- Session Switcher -->
+  <div class="session-switcher">
+    <select id="sessionSelect"></select>
+    <button id="newSessionBtn">➕</button>
+    <button id="delSessionBtn">🗑</button>
+    <a href="create.html" style="color:var(--muted);font-size:12px;text-decoration:none;padding:4px 8px;border:1px solid var(--border);border-radius:6px;">🔄 创建角色</a>
+  </div>
+
+  <!-- Status Panel -->
+  <div class="status-panel" id="statusPanel">
+    <h3>⚔ 玩家状态</h3>
+    <div class="status-grid">
+      <div class="status-item"><div class="val hp" id="sHP">100%</div><div class="lbl">❤ 生命</div></div>
+      <div class="status-item"><div class="val mp" id="sMP">100%</div><div class="lbl">💎 魔力</div></div>
+      <div class="status-item"><div class="val stamina" id="sStamina">充沛</div><div class="lbl">⚡ 体力</div></div>
+      <div class="status-item"><div class="val hunger" id="sHunger">正常</div><div class="lbl">🍖 饥饿</div></div>
+      <div class="status-item"><div class="val gold" id="sGold">0</div><div class="lbl">💰 金币</div></div>
+      <div class="status-item"><div class="val xp" id="sXP">0</div><div class="lbl">✨ 经验</div></div>
+      <div class="status-item full-width"><div class="lbl">🩹 伤势:</div><div class="val" id="sInjury">无</div></div>
+      <div class="status-item full-width"><div class="lbl">🌀 异常:</div><div class="val" id="sStatus">无</div></div>
+      <div class="status-item full-width"><div class="lbl">📍 位置:</div><div class="val" id="sLocation">未知</div></div>
+    </div>
+    <h3><span class="lingnet-indicator">🌐 大陆灵网<span class="badge" id="lingnetBadge"></span></span></h3>
+    <div class="lingnet" id="lingnetList"></div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area" id="chatArea"></div>
+
+  <!-- Input Area -->
+  <div class="input-area" id="inputArea">
+    <textarea id="userInput" placeholder="输入你的行动..." rows="1"></textarea>
+    <button id="sendBtn">🎲</button>
+  </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div class="game-over-overlay" id="gameOverOverlay">
+  <h2>💀 你已倒下</h2>
+  <p>冒险到此结束...</p>
+  <button onclick="location.reload()">重新开始</button>
+</div>
+
+<script>
+// ========== 核心数据 ==========
+var charData = null;
+try { charData = JSON.parse(localStorage.getItem('dicechat_char')); } catch(e) {}
+var gameOver = false;
+var lingnetTimer = null;
+
+// ========== 玩家状态（默认值） ==========
+var defaultState = { hp:'100%', mp:'100%', stamina:'充沛', hunger:'正常', injury:'无', status:'无', gold:'0', xp:'0', location:'未知' };
+var playerState = Object.assign({}, defaultState);
+
+// ========== 灵网消息池 ==========
+var lingnetPool = [
+  {tag:'公会', text:'冒险者公会发布新委托：调查北方废墟的异响。'},
+  {tag:'公会', text:'本月赏金猎人排名已更新，冠军仍被"银狼"占据。'},
+  {tag:'公会', text:'紧急委托：护送商队穿越暗影森林，报酬丰厚。'},
+  {tag:'传闻', text:'有人在月落湖畔目击到传说中的精灵古墓。'},
+  {tag:'传闻', text:'据说深渊之主的力量最近有所波动，暗影更加活跃了。'},
+  {tag:'传闻', text:'矮人锻造大师宣布即将打造一柄传奇武器。'},
+  {tag:'传闻', text:'瞳最近在皇家图书馆频繁出入，似乎在寻找什么。'},
+  {tag:'警示', text:'警告：南部边境出现大量魔物，请冒险者结伴同行。'},
+  {tag:'警示', text:'瘟疫在东部村庄蔓延，请远离受感染区域。'},
+  {tag:'警示', text:'深渊裂缝扩大！所有靠近暗渊的冒险者请提高警惕。'},
+  {tag:'旅人', text:'吟游诗人歌唱着遥远北境的极光与龙的传说。'},
+  {tag:'旅人', text:'一位旅者说在古城废墟中发现了刻有神秘符文的石板。'},
+  {tag:'公会', text:'炼金工会急需月光草与龙血藤，愿出双倍收购价。'},
+  {tag:'传闻', text:'苍崎千夜最近在黑市购买了大量禁术材料。'},
+  {tag:'传闻', text:'有人说孔祥灏在秘密筹建一只不属于任何国家的军队。'},
+  {tag:'警示', text:'魔能风暴预计将于三日后经过中央平原，请做好防护。'},
+  {tag:'旅人', text:'来自东方的商队带来了新奇香料与未知的矿石。'},
+  {tag:'公会', text:'冒险者公会年度庆典将于下周在王都举行，欢迎参加。'}
+];
+var lingnetMessages = [];
+var lingnetIndex = 0;
+function shuffleArr(a) { for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } }
+shuffleArr(lingnetPool);
+
+// ========== 多对话持久化 ==========
+var STORAGE_KEY = 'dicechat_sessions';
+var ACTIVE_KEY = 'dicechat_active';
+var MAX_SESSIONS = 20;
+
+function makeSessionId() { return 's_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+function getAllSessions() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; } }
+function setAllSessions(arr) { if(arr.length > MAX_SESSIONS) arr = arr.slice(0, MAX_SESSIONS); localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function getActiveId() { return localStorage.getItem(ACTIVE_KEY) || ''; }
+function setActiveId(id) { localStorage.setItem(ACTIVE_KEY, id); }
+function findSession(id) { return getAllSessions().find(function(s){ return s.id === id; }) || null; }
+
+function saveCurrentSession() {
+  if(!currentSessionId) return;
+  var sessions = getAllSessions();
+  var idx = sessions.findIndex(function(s){ return s.id === currentSessionId; });
+  var data = {
+    id: currentSessionId,
+    title: sessionTitle,
+    messages: messages,
+    playerState: playerState,
+    lingnetMessages: lingnetMessages,
+    lingnetIndex: lingnetIndex,
+    gameOver: gameOver,
+    createdAt: idx >= 0 ? sessions[idx].createdAt : Date.now(),
+    updatedAt: Date.now()
+  };
+  if(idx >= 0) sessions[idx] = data; else sessions.unshift(data);
+  setAllSessions(sessions);
 }
-.container {
-max-width: 600px;
-margin: 0 auto;
+
+function loadSession(id) {
+  var s = findSession(id);
+  if(!s) return false;
+  currentSessionId = s.id;
+  sessionTitle = s.title || '对话 ' + new Date(s.createdAt).toLocaleDateString();
+  messages = s.messages || [];
+  playerState = s.playerState ? Object.assign({}, defaultState, s.playerState) : Object.assign({}, defaultState);
+  lingnetMessages = s.lingnetMessages || [];
+  lingnetIndex = s.lingnetIndex || 0;
+  gameOver = s.gameOver || false;
+  setActiveId(s.id);
+  return true;
 }
-h1 {
-font-size: 1.4rem;
-margin: 0 0 16px;
+
+function deleteSession(id) {
+  var sessions = getAllSessions().filter(function(s){ return s.id !== id; });
+  setAllSessions(sessions);
 }
+
+var currentSessionId = '';
+var sessionTitle = '新对话';
+var messages = [];
+
+// ========== UI 引用 ==========
+var chatArea = document.getElementById('chatArea');
+var sessionSelect = document.getElementById('sessionSelect');
+var inputArea = document.getElementById('inputArea');
+var userInput = document.getElementById('userInput');
+var sendBtn = document.getElementById('sendBtn');
+var statusPanel = document.getElementById('statusPanel');
+var lingnetBadge = document.getElementById('lingnetBadge');
+
+// ========== 渲染函数 ==========
+function addMsg(role, text, extraEl) {
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  if(extraEl) div.appendChild(extraEl);
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return div;
+}
+
+function renderChoices(choices) {
+  var wrap = document.createElement('div');
+  wrap.className = 'choices';
+  choices.forEach(function(c) {
+    var btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    var isFree = c.indexOf('E.') === 0 || c.indexOf('玩家自由行动') >= 0;
+    if(isFree) btn.classList.add('free');
+    var keyMatch = c.match(/^([A-E])\.\s*/);
+    var key = keyMatch ? keyMatch[1] : '?';
+    var label = c.replace(/^[A-E]\.\s*/, '');
+    btn.innerHTML = '<span class="key">' + key + '</span>' + label;
+    btn.onclick = function() {
+      if(btn.classList.contains('used')) return;
+      wrap.querySelectorAll('.choice-btn').forEach(function(b){ b.classList.add('used'); });
+      if(isFree) {
+        userInput.focus();
+      } else {
+        sendMessage(label);
+      }
+    };
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
+function updateStatusDisplay(flashField, isDanger) {
+  var map = {hp:'sHP', mp:'sMP', stamina:'sStamina', hunger:'sHunger', injury:'sInjury', status:'sStatus', gold:'sGold', xp:'sXP', location:'sLocation'};
+  for(var k in map) {
+    var el = document.getElementById(map[k]);
+    if(!el) continue;
+    var val = playerState[k] || defaultState[k];
+    el.textContent = val;
+    el.className = 'val';
+    // 样式
+    if(k === 'hp') { el.classList.add('hp'); var n=parseInt(val); if(n<=0){el.classList.add('danger-flash');} else if(n<=30){el.style.color='var(--warn)';} }
+    if(k === 'mp') { el.classList.add('mp'); var n=parseInt(val); if(n<=0){el.classList.add('danger-flash');} else if(n<=20){el.style.color='var(--warn)';} }
+    if(k === 'stamina' && val==='昏迷') { el.classList.add('danger-flash'); }
+    if(k === 'hunger' && (val==='极饿'||val==='饥饿')) { el.style.color='var(--warn)'; }
+    // 闪烁
+    if(flashField === k) { el.classList.add(isDanger ? 'danger-flash' : 'flash'); setTimeout(function(){ el.classList.remove('flash','danger-flash'); }, 700); }
+  }
+  // 迷你状态栏
+  document.getElementById('miniHP').textContent = '❤ ' + (playerState.hp || '100%');
+  document.getElementById('miniMP').textContent = '💎 ' + (playerState.mp || '100%');
+  var hpN = parseInt(playerState.hp);
+  if(!isNaN(hpN) && hpN <= 30) document.getElementById('miniHP').style.color = 'var(--warn)';
+  var mpN = parseInt(playerState.mp);
+  if(!isNaN(mpN) && mpN <= 20) document.getElementById('miniMP').style.color = 'var(--warn)';
+  // 角色名
+  if(charData) {
+    var name = charData.name || charData.角色名 || (charData.raceInfo && charData.raceInfo.名称) || '冒险者';
+    document.getElementById('charName').textContent = name;
+  }
+}
+
+function renderLingnet() {
+  var list = document.getElementById('lingnetList');
+  list.innerHTML = '';
+  var tagMap = {'公会':'guild','传闻':'rumor','警示':'warning','旅人':'traveler'};
+  var recent = lingnetMessages.slice(-12);
+  recent.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'lmsg' + (m._new ? ' new' : '');
+    var cls = tagMap[m.tag] || 'guild';
+    div.innerHTML = '<span class="tag ' + cls + '">' + m.tag + '</span>' + m.text;
+    list.appendChild(div);
+    if(m._new) setTimeout(function(){ m._new = false; }, 3200);
+  });
+  list.scrollTop = list.scrollHeight;
+}
+
+function refreshSessionList() {
+  var sessions = getAllSessions();
+  sessionSelect.innerHTML = '';
+  if(sessions.length === 0) {
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '无对话';
+    sessionSelect.appendChild(opt);
+    return;
+  }
+  sessions.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    var d = new Date(s.updatedAt || s.createdAt);
+    opt.textContent = (s.title || '对话') + ' (' + d.toLocaleDateString() + ')';
+    if(s.id === currentSessionId) opt.selected = true;
+    sessionSelect.appendChild(opt);
+  });
+}
+
+function renderAllMessages() {
+  chatArea.innerHTML = '';
+  var lastAiIdx = -1;
+  messages.forEach(function(m, i) {
+    var role = m.role === 'user' ? 'user' : (m.role === 'gameover' ? 'gameover' : (m.role === 'system' ? 'system' : 'ai'));
+    var div = addMsg(role, m.content);
+    if(m.role === 'ai') lastAiIdx = i;
+  });
+  // 给最后一条AI消息加选项
+  if(lastAiIdx >= 0 && messages[lastAiIdx].choices && messages[lastAiIdx].choices.length > 0 && !gameOver) {
+    var aiMsgs = chatArea.querySelectorAll('.msg.ai');
+    if(aiMsgs.length > 0) {
+      var lastAi = aiMsgs[aiMsgs.length - 1];
+      if(!lastAi.querySelector('.choices')) {
+        lastAi.appendChild(renderChoices(messages[lastAiIdx].choices));
+      }
+    }
+  }
+}
+
+// ========== 灵网定时器（唯一的自动计时器） ==========
+function startLingnetTimer() {
+  if(lingnetTimer) clearTimeout(lingnetTimer);
+  function pushLingnet() {
+    if(lingnetIndex >= lingnetPool.length) { shuffleArr(lingnetPool); lingnetIndex = 0; }
+    var msg = Object.assign({}, lingnetPool[lingnetIndex++]);
+    msg._new = true;
+    lingnetMessages.push(msg);
+    if(lingnetMessages.length > 12) lingnetMessages = lingnetMessages.slice(-12);
+    renderLingnet();
+    lingnetBadge.classList.add('show');
+    setTimeout(function(){ lingnetBadge.classList.remove('show'); }, 5000);
+    saveCurrentSession();
+  }
+  pushLingnet(); // 首次推送
+  function scheduleNext() {
+    var delay = 90000 + Math.random() * 90000; // 90-180秒
+    lingnetTimer = setTimeout(function() { pushLingnet(); scheduleNext(); }, delay);
+  }
+  scheduleNext();
+}
+
+// ========== 系统提示词 ==========
+function buildSystemPrompt(data) {
+  if (!data) {
+    return '你是「艾尔德兰大陆」的GM（游戏主持人），负责为玩家创造奇幻世界的冒险体验。' +
+      '世界观：艾尔德兰大陆——神陨纪元1024年，十二柱神已逝，凡人执笔书写命运。' +
+      '风格：日式奇幻RPG，用4-10句话描写场景，包含感官细节（视觉、听觉、触觉、嗅觉）。' +
+      '重要NPC：瞳（神秘少女，知晓世界真相，偶尔回应灵网呼唤）、深渊之主（幕后反派，操控暗影与腐化）、苍崎千夜（流浪剑客，亦正亦邪）、孔祥灏（天才军师，意图统一大陆，不择手段）。' +
+      '回复格式严格三分式：' +
+      '第一段：叙事正文（4-10句，含对话/行动/环境/感官描写）。' +
+      '第二段：[SEP]后列出4个选项（A./B./C./D.开头，每项≤15字），再加 E. 玩家自由行动。' +
+      '第三段：[SEP]后输出JSON：{"hp":"数值%","mp":"数值%","stamina":"状态","hunger":"状态","injury":"伤势","status":"异常","gold":"金币","xp":"经验","location":"位置"}' +
+      '状态规则：只在事件确实影响角色时修改数值，不自动衰减。饥饿极低时hp应下降。hp=0%角色死亡，mp=0%无法施法，体力=昏迷则角色失去意识。' +
+      '如果灵网有新消息，在JSON后追加："lingnet":[{"tag":"公会/传闻/警示/旅人","text":"消息内容"}]';
+  }
+  var name = data.name || data.角色名 || (data.raceInfo && data.raceInfo.名称) || '冒险者';
+  var race = (data.raceInfo && data.raceInfo.种族) || '未知';
+  var gender = (data.raceInfo && data.raceInfo.性别) || '未知';
+  var region = (data.raceInfo && data.raceInfo.区域) || '未知';
+  var stats = data.stats || {};
+  return '【致命重要！严格遵守以下设定！】\n' +
+    '【世界观】艾尔德兰大陆——神陨纪元1024年。十二柱神已逝，凡人执笔书写命运。大陆上有魔法、古老遗迹、各种种族与势力。\n' +
+    '【你的角色】你是「艾尔德兰大陆」的GM（游戏主持人），负责为玩家创造沉浸式奇幻冒险。\n' +
+    '【玩家角色】' + name + ' | 种族：' + race + ' | 性别：' + gender + ' | 出身：' + region + '\n' +
+    '属性——力量：' + (stats.力量||'?') + ' 敏捷：' + (stats.敏捷||'?') + ' 体质：' + (stats.体质||'?') + ' 智力：' + (stats.智力||'?') + ' 感知：' + (stats.感知||'?') + ' 魅力：' + (stats.魅力||'?') + '\n' +
+    '【重要NPC】\n' +
+    '· 瞳——神秘少女，知晓世界真相，偶尔回应灵网中的呼唤，行踪不明。\n' +
+    '· 深渊之主——幕后反派，操控暗影与腐化，企图让大陆重归混沌。\n' +
+    '· 苍崎千夜——流浪剑客，亦正亦邪，实力深不可测，追求极致的剑道。\n' +
+    '· 孔祥灏——天才军师，意图统一大陆，手段高明，不择手段。\n' +
+    '【回复格式】严格三分式：\n' +
+    '第一段：叙事正文（4-10句，含对话/行动/环境/感官描写，奇幻小说笔触）\n' +
+    '第二段：[SEP]后列出4个选项（A./B./C./D.开头，每项≤15字），加 E. 玩家自由行动\n' +
+    '第三段：[SEP]后输出JSON：{"hp":"数值%","mp":"数值%","stamina":"状态","hunger":"状态","injury":"伤势","status":"异常","gold":"金币","xp":"经验","location":"位置"}\n' +
+    '【状态规则】\n' +
+    '· 只在事件确实影响角色时修改数值，不要无故/自动下降\n' +
+    '· 饥饿极低时，hp应缓慢下降\n' +
+    '· hp=0% → 角色死亡，游戏结束\n' +
+    '· mp=0% → 无法使用魔法\n' +
+    '· 体力=昏迷 → 角色失去意识\n' +
+    '· 提供恢复属性的机会：补给/休息/治疗/升级等\n' +
+    '· 如果灵网有新消息，在JSON后追加："lingnet":[{"tag":"标签","text":"内容"}]\n' +
+    '【叙事要求】日式奇幻小说笔触，D20骰子决定行动成败（自动掷骰），描写细腻沉浸。';
+}
+
+// ========== AI 调用 ==========
+function callAI(msgs, callback) {
+  var sysPrompt = buildSystemPrompt(charData);
+  var apiMsgs = [{role:'system', content: sysPrompt}];
+  var recent = msgs.slice(-20);
+  recent.forEach(function(m) {
+    if(m.role === 'ai') apiMsgs.push({role:'assistant', content: m.raw || m.content});
+    else if(m.role === 'user') apiMsgs.push({role:'user', content: m.content});
+  });
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({messages: apiMsgs})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if(data.reply) callback(data.reply);
+    else callback('（灵网出现了干扰，信号不稳...）');
+  })
+  .catch(function(e) {
+    console.error('API error:', e);
+    callback('（连接中断...灵网信号不稳定）');
+  });
+}
+
+// ========== 解析AI回复 ==========
+function parseAIReply(text) {
+  var parts = text.split('[SEP]');
+  var narrative = (parts[0] || '').trim();
+  var choices = [];
+  var stateJson = null;
+  var lingnetNew = null;
+  if(parts[1]) {
+    var lines = parts[1].split('\n');
+    lines.forEach(function(line) {
+      line = line.trim();
+      if(/^[A-E]\.\s/.test(line)) choices.push(line);
+    });
+  }
+  if(parts[2]) {
+    var jsonStr = parts[2].trim();
+    var jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if(jsonMatch) {
+      try {
+        var obj = JSON.parse(jsonMatch[0]);
+        stateJson = obj;
+        if(obj.lingnet && Array.isArray(obj.lingnet)) {
+          lingnetNew = obj.lingnet;
+          delete obj.lingnet;
+        }
+      } catch(e) { console.warn('JSON parse error:', e); }
+    }
+  }
+  return { narrative: narrative, choices: choices, stateJson: stateJson, lingnetNew: lingnetNew };
+}
+
+// ========== 更新状态+边界检查 ==========
+function updatePlayerState(stateJson) {
+  if(!stateJson) return;
+  var flashField = null;
+  var isDanger = false;
+  for(var k in stateJson) {
+    if(k === 'lingnet') continue;
+    if(playerState.hasOwnProperty(k)) {
+      var newVal = String(stateJson[k]);
+      if(playerState[k] !== newVal) {
+        flashField = k;
+        // 判断是否为负面变化
+        if(k === 'hp' || k === 'mp') {
+          var oldN = parseInt(playerState[k]) || 100;
+          var newN = parseInt(newVal) || 0;
+          isDanger = newN < oldN;
+        }
+        if(k === 'stamina' && (newVal === '昏迷' || newVal === '虚弱')) isDanger = true;
+        if(k === 'hunger' && (newVal === '极饿' || newVal === '饥饿')) isDanger = true;
+      }
+      playerState[k] = newVal;
+    }
+  }
+  updateStatusDisplay(flashField, isDanger);
+
+  // 边界检查
+  var hpNum = parseInt(playerState.hp);
+  if(!isNaN(hpNum) && hpNum <= 0) {
+    gameOver = true;
+    document.getElementById('gameOverOverlay').classList.add('show');
+    inputArea.classList.add('disabled');
+    messages.push({role:'gameover', content:'你已倒下...冒险到此结束。'});
+    saveCurrentSession();
+    return;
+  }
+  // MP极低警告
+  var mpNum = parseInt(playerState.mp);
+  if(!isNaN(mpNum) && mpNum <= 0) {
+    addMsg('system', '⚠ 魔力耗尽，无法使用魔法！');
+  }
+  // 体力昏迷
+  if(playerState.stamina === '昏迷') {
+    inputArea.classList.add('disabled');
+    addMsg('system', '⚠ 你陷入了昏迷，无法行动...');
+    messages.push({role:'system', content:'你陷入了昏迷'});
+    setTimeout(function() {
+      playerState.stamina = '虚弱';
+      inputArea.classList.remove('disabled');
+      updateStatusDisplay('stamina', false);
+      addMsg('ai', '你缓缓苏醒过来，身体仍然十分虚弱...');
+      messages.push({role:'ai', content:'你缓缓苏醒过来，身体仍然十分虚弱...'});
+      saveCurrentSession();
+    }, 5000);
+  }
+  // 状态面板闪烁
+  statusPanel.classList.add('flash');
+  setTimeout(function(){ statusPanel.classList.remove('flash'); }, 800);
+  saveCurrentSession();
+}
+
+// ========== 发送消息 ==========
+function sendMessage(text) {
+  if(gameOver) return;
+  if(!text || !text.trim()) return;
+  text = text.trim();
+
+  addMsg('user', text);
+  messages.push({role:'user', content: text});
+  saveCurrentSession();
+
+  // 加载状态
+  var loadingDiv = addMsg('ai', '');
+  loadingDiv.classList.add('loading');
+  loadingDiv.textContent = '思考中';
+
+  callAI(messages, function(reply) {
+    loadingDiv.classList.remove('loading');
+
+    var parsed = parseAIReply(reply);
+    loadingDiv.textContent = parsed.narrative;
+
+    messages.push({
+      role: 'ai',
+      content: parsed.narrative,
+      raw: reply,
+      choices: parsed.choices
+    });
+
+    // 更新状态
+    if(parsed.stateJson) updatePlayerState(parsed.stateJson);
+
+    // 灵网消息
+    if(parsed.lingnetNew && parsed.lingnetNew.length) {
+      parsed.lingnetNew.forEach(function(m) { m._new = true; lingnetMessages.push(m); });
+      if(lingnetMessages.length > 12) lingnetMessages = lingnetMessages.slice(-12);
+      renderLingnet();
+      lingnetBadge.classList.add('show');
+      setTimeout(function(){ lingnetBadge.classList.remove('show'); }, 5000);
+    }
+
+    // 渲染选项
+    if(parsed.choices.length > 0 && !gameOver) {
+      loadingDiv.appendChild(renderChoices(parsed.choices));
+    }
+
+    saveCurrentSession();
+  });
+
+  userInput.value = '';
+}
+
+// ========== 事件绑定 ==========
+sendBtn.onclick = function() { sendMessage(userInput.value); };
+userInput.onkeydown = function(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(userInput.value); } };
+
+// 状态面板开关
+document.getElementById('avatarBtn').onclick = function() { statusPanel.classList.toggle('open'); };
+document.getElementById('expandBtn').onclick = function() { statusPanel.classList.toggle('open'); };
+
+// 对话管理
+document.getElementById('newSessionBtn').onclick = function() {
+  var id = makeSessionId();
+  currentSessionId = id;
+  sessionTitle = '新对话';
+  messages = [];
+  playerState = Object.assign({}, defaultState);
+  lingnetMessages = [];
+  lingnetIndex = 0;
+  gameOver = false;
+  inputArea.classList.remove('disabled');
+  document.getElementById('gameOverOverlay').classList.remove('show');
+  setActiveId(id);
+  chatArea.innerHTML = '';
+  if(charData) {
+    var name = charData.name || charData.角色名 || (charData.raceInfo && charData.raceInfo.名称) || '冒险者';
+    addMsg('ai', name + '，请开始你的冒险。');
+    messages.push({role:'ai', content: name + '，请开始你的冒险。'});
+  } else {
+    addMsg('ai', '请先输入角色设定，或点击上方「🔄 创建角色」按钮～');
+    messages.push({role:'ai', content: '请先输入角色设定，或点击上方「🔄 创建角色」按钮～'});
+  }
+  saveCurrentSession();
+  refreshSessionList();
+  updateStatusDisplay();
+  startLingnetTimer();
+};
+
+document.getElementById('delSessionBtn').onclick = function() {
+  if(!currentSessionId) return;
+  if(!confirm('确定删除当前对话？')) return;
+  deleteSession(currentSessionId);
+  var sessions = getAllSessions();
+  if(sessions.length > 0) {
+    loadSession(sessions[0].id);
+    refreshSessionList();
+    renderAllMessages();
+    updateStatusDisplay();
+    renderLingnet();
+    checkGameState();
+  } else {
+    document.getElementById('newSessionBtn').click();
+  }
+};
+
+sessionSelect.onchange = function() {
+  var id = sessionSelect.value;
+  if(id && id !== currentSessionId) {
+    if(loadSession(id)) {
+      checkGameState();
+      renderAllMessages();
+      updateStatusDisplay();
+      renderLingnet();
+      refreshSessionList();
+    }
+  }
+};
+
+function checkGameState() {
+  if(gameOver) {
+    inputArea.classList.add('disabled');
+    document.getElementById('gameOverOverlay').classList.add('show');
+  } else {
+    inputArea.classList.remove('disabled');
+    document.getElementById('gameOverOverlay').classList.remove('show');
+    if(playerState.stamina === '昏迷') inputArea.classList.add('disabled');
+  }
+}
+
+// ========== 初始化 ==========
+(function init() {
+  var activeId = getActiveId();
+  var restored = false;
+  if(activeId) restored = loadSession(activeId);
+  if(!restored) {
+    var sessions = getAllSessions();
+    if(sessions.length > 0) restored = loadSession(sessions[0].id);
+  }
+
+  if(restored) {
+    checkGameState();
+    renderAllMessages();
+    updateStatusDisplay();
+    renderLingnet();
+  } else {
+    var id = makeSessionId();
+    currentSessionId = id;
+    sessionTitle = '新对话';
+    messages = [];
+    playerState = Object.assign({}, defaultState);
+    lingnetMessages = [];
+    lingnetIndex = 0;
+    setActiveId(id);
+    if(charData) {
+      var name = charData.name || charData.角色名 || (charData.raceInfo && charData.raceInfo.名称) || '冒险者';
+      addMsg('ai', name + '，请开始你的冒险。');
+      messages.push({role:'ai', content: name + '，请开始你的冒险。'});
+    } else {
+      addMsg('ai', '请先输入角色设定，或点击上方「🔄 创建角色」按钮～');
+      messages.push({role:'ai', content: '请先输入角色设定，或点击上方「🔄 创建角色」按钮～'});
+    }
+    saveCurrentSession();
+  }
+
+  refreshSessionList();
+  updateStatusDisplay();
+  startLingnetTimer();
+})();
+</script>
+</body>
+</html>]]>
