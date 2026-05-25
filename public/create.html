@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>艾尔德兰 · 冒险者创建</title>
+<title>艾尔德兰大陆 · 冒险者创建</title>
 <style>
   :root { --bg: #0d1117; --panel: #161b22; --border: #30363d; --gold: #d4a574; --accent: #7c3aed; --text: #e6edf3; --sub: #8b949e; --good: #3fb950; --warn: #d2991d; --bad: #f85149; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,21 +14,28 @@
     background-image: radial-gradient(ellipse at 50% 30%, #1a1030 0%, #0d1117 70%);
   }
   .container { width: 520px; max-width: 95vw; }
-  .steps { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .steps { display: flex; gap: 4px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
   .step {
-    flex: 1; text-align: center; padding: 8px; border-radius: 8px;
-    background: var(--panel); border: 1px solid var(--border); font-size: 12px; color: var(--sub);
-    transition: .3s;
+    flex: 1 1 auto; min-width: 50px; text-align: center; padding: 8px 6px; border-radius: 8px;
+    background: var(--panel); border: 1px solid var(--border); font-size: 11px; color: var(--sub); transition: .3s;
   }
   .step.active { border-color: var(--accent); color: var(--text); box-shadow: 0 0 12px rgba(124,58,237,0.3); }
   .step.done { border-color: var(--good); color: var(--good); }
-  .step-arrow { color: var(--sub); font-size: 14px; }
+  .step-arrow { color: var(--sub); font-size: 12px; flex-shrink: 0; }
   .panel {
     background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
     padding: 24px; min-height: 320px; position: relative; overflow: hidden;
   }
   .panel h2 { font-size: 20px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
   .panel .sub { color: var(--sub); font-size: 13px; margin-bottom: 20px; }
+  .name-input-wrap { text-align: center; margin-top: 20px; }
+  .name-input-wrap input {
+    width: 260px; padding: 12px 16px; border-radius: 12px; border: 2px solid var(--border);
+    background: rgba(255,255,255,0.05); color: var(--text); font-size: 18px; text-align: center;
+    outline: none; transition: .3s; font-family: inherit;
+  }
+  .name-input-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 16px rgba(124,58,237,0.3); }
+  .name-input-wrap input::placeholder { color: var(--sub); }
   .gender-cards { display: flex; gap: 16px; }
   .gender-card {
     flex: 1; padding: 24px 16px; border-radius: 14px; text-align: center; cursor: pointer;
@@ -92,18 +99,21 @@
   .btn-nav { padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; font-size: 14px; transition: .3s; margin: 0 4px; }
   .btn-nav:hover { border-color: var(--gold); }
   .nav-row { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+  .name-preview { font-size: 32px; font-weight: bold; color: var(--gold); text-align: center; margin: 40px 0 20px; min-height: 48px; }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="steps" id="stepBar">
-    <div class="step active" id="step1">⚧ 性别</div>
+    <div class="step active" id="step1">📛 命名</div>
     <span class="step-arrow">→</span>
-    <div class="step" id="step2">🧬 种族</div>
+    <div class="step" id="step2">⚧ 性别</div>
     <span class="step-arrow">→</span>
-    <div class="step" id="step3">🎲 抽取</div>
+    <div class="step" id="step3">🧬 种族</div>
     <span class="step-arrow">→</span>
-    <div class="step" id="step4">📋 确认</div>
+    <div class="step" id="step4">🎲 抽取</div>
+    <span class="step-arrow">→</span>
+    <div class="step" id="step5">📋 确认</div>
   </div>
   <div class="panel" id="panel"></div>
 </div>
@@ -130,16 +140,25 @@ const TALENTS = {
   神赐:[{名:'神之遗志',效:'每次冒险可重掷判定一次'}]
 };
 const RACES = {
-  '\u{1F464}人类':{名:'人类',天赋:'均衡成长',效果:'全属性+1',区域:'王都格兰威尔'},
-  '\u{1F9DD}森精灵':{名:'森精灵',天赋:'自然亲和',效果:'魔力+3',区域:'银叶森林'},
-  '\u26CF\uFE0F矮人':{名:'矮人',天赋:'钢铁体魄',效果:'体力+3',区域:'铁炉山脉'},
-  '\u{1F311}暗精灵':{名:'暗精灵',天赋:'暗影行者',效果:'敏捷+3',区域:'影月荒原'},
-  '\u{1F43A}兽人':{名:'兽人',天赋:'战斗血脉',效果:'力量+3',区域:'影月荒原'},
-  '\u2728半神遗民':{名:'半神遗民',天赋:'神血觉醒',效果:'随机属性+5',区域:'各地（极稀有）'}
+  '👤人类':{名:'人类',天赋:'均衡成长',效果:'全属性+1',区域:'王都格兰威尔'},
+  '🧝森精灵':{名:'森精灵',天赋:'自然亲和',效果:'魔力+3',区域:'银叶森林'},
+  '⚔️矮人':{名:'矮人',天赋:'钢铁体魄',效果:'体力+3',区域:'铁炉山脉'},
+  '🌑暗精灵':{名:'暗精灵',天赋:'暗影行者',效果:'敏捷+3',区域:'影月荒原'},
+  '🐺兽人':{名:'兽人',天赋:'战斗血脉',效果:'力量+3',区域:'影月荒原'},
+  '✨半神遗民':{名:'半神遗民',天赋:'神血觉醒',效果:'随机属性+5',区域:'各地（极稀有）'}
 };
-let state = { step:1, gender:'', race:'', stats:{}, qual:'', talents:[], rollCount:0, locked:false };
+let state = { step:1, name:'', gender:'', race:'', stats:{}, qual:'', talents:[], rollCount:0, locked:false };
+
+function nextStep(){
+  if(state.step===1 && !state.name.trim()) return;
+  if(state.step===2 && !state.gender) return;
+  if(state.step===3 && !state.race) return;
+  if(state.step===4){ lockAndNext(); return; }
+  state.step++; renderPanel();
+}
+function prevStep(){ if(state.step>1){ state.step--; renderPanel(); } }
 function renderStepBar() {
-  for(let i=1;i<=4;i++){
+  for(let i=1;i<=5;i++){
     let el = document.getElementById('step'+i);
     el.className = 'step';
     if(i<state.step) el.classList.add('done');
@@ -149,27 +168,41 @@ function renderStepBar() {
 function renderPanel() {
   let panel = document.getElementById('panel');
   switch(state.step){
-    case 1: renderGender(panel); break;
-    case 2: renderRace(panel); break;
-    case 3: renderRoll(panel); break;
-    case 4: renderResult(panel); break;
+    case 1: renderName(panel); break;
+    case 2: renderGender(panel); break;
+    case 3: renderRace(panel); break;
+    case 4: renderRoll(panel); break;
+    case 5: renderResult(panel); break;
   }
   renderStepBar();
 }
-function renderGender(panel){
-  panel.innerHTML = `<h2>\u26A7 选择你的性别</h2><p class="sub">冒险者的身份，由你决定</p>
-    <div class="gender-cards">
-      <div class="gender-card ${state.gender==='男'?'selected':''}" onclick="selectGender('男')"><div class="icon">\u2694\uFE0F</div><div class="label">男</div></div>
-      <div class="gender-card ${state.gender==='女'?'selected':''}" onclick="selectGender('女')"><div class="icon">\u{1F3F9}</div><div class="label">女</div></div>
+
+function renderName(panel){
+  panel.innerHTML = `<h2>📛 为你的冒险者命名</h2><p class="sub">这个名字将响彻艾尔德兰大陆——</p>
+    <div class="name-preview" id="namePreview">${state.name || '⋯'}</div>
+    <div class="name-input-wrap">
+      <input type="text" id="nameInput" maxlength="12" placeholder="输入角色名..." value="${state.name||''}" oninput="updateName(this.value)" onkeypress="if(event.key==='Enter'&&state.name.trim())nextStep()">
     </div>
-    <div class="nav-row"><button class="btn-nav" onclick="nextStep()" ${!state.gender?'disabled style="opacity:0.4"':''}>下一步 →</button></div>`;
+    <div class="nav-row">
+      <button class="btn-nav" onclick="nextStep()" ${!state.name.trim()?'disabled style="opacity:0.4"':''}>下一步 →</button>
+    </div>`;
+  setTimeout(function(){ var inp=document.getElementById('nameInput'); if(inp) inp.focus(); }, 100);
+}
+function updateName(v){ state.name=v; var p=document.getElementById('namePreview'); if(p) p.textContent=v||'⋯'; }
+function renderGender(panel){
+  panel.innerHTML = `<h2>⚧ 选择${state.name||'你'}的性别</h2><p class="sub">冒险者的身份，由你决定</p>
+    <div class="gender-cards">
+      <div class="gender-card ${state.gender==='男'?'selected':''}" onclick="selectGender('男')"><div class="icon">⚔️</div><div class="label">男</div></div>
+      <div class="gender-card ${state.gender==='女'?'selected':''}" onclick="selectGender('女')"><div class="icon">🏹</div><div class="label">女</div></div>
+    </div>
+    <div class="nav-row"><button class="btn-nav" onclick="prevStep()">← 上一步</button>
+    <button class="btn-nav" onclick="nextStep()" ${!state.gender?'disabled style="opacity:0.4"':''}>下一步 →</button></div>`;
 }
 function selectGender(g){ state.gender=g; renderPanel(); }
 function renderRace(panel){
-  let html = '<h2>\u{1F9EC} 选择你的种族</h2><p class="sub">每个种族都有独特的天赋加成</p><div class="race-grid">';
+  let html = '<h2>🧬 选择种族</h2><p class="sub">每个种族都有独特的天赋加成</p><div class="race-grid">';
   for(let [icon,info] of Object.entries(RACES)){
-    let emoji = [...icon][0];
-    html += `<div class="race-card ${state.race===icon?'selected':''}" onclick="selectRace('${icon}')"><div class="race-icon">${emoji}</div><div class="race-name">${info.名}</div><div class="race-bonus">${info.效果}</div></div>`;
+    html += `<div class="race-card ${state.race===icon?'selected':''}" onclick="selectRace('${icon}')"><div class="race-icon">${[...icon][0]}</div><div class="race-name">${info.名}</div><div class="race-bonus">${info.效果}</div></div>`;
   }
   html += '</div><div class="nav-row"><button class="btn-nav" onclick="prevStep()">← 上一步</button>';
   html += `<button class="btn-nav" onclick="nextStep()" ${!state.race?'disabled style="opacity:0.4"':''}>下一步 →</button></div>`;
@@ -179,18 +212,18 @@ function selectRace(r){ state.race=r; renderPanel(); }
 function rollStat(){ return Math.floor(Math.random()*16)+3; }
 function renderRoll(panel){
   let locked = state.locked;
-  let qualHtml = state.qual ? `<span class="qual-badge">\u2B50 ${state.qual}资质 · 上限${QUALITY_EFFECT[state.qual].上限} · 成长x${QUALITY_EFFECT[state.qual].倍率}</span>` : '';
-  let talHtml = state.talents.map(t=>`<span class="talent-badge">\u2728 ${t.名}：${t.效}</span>`).join('');
+  let qualHtml = state.qual ? `<span class="qual-badge">⭐ ${state.qual}资质 · 上限${QUALITY_EFFECT[state.qual].上限} · 成长x${QUALITY_EFFECT[state.qual].倍率}</span>` : '';
+  let talHtml = state.talents.map(t=>`<span class="talent-badge">✨ ${t.名}：${t.效}</span>`).join('');
   let statHtml = '';
   for(let s of STATS){
     let val = state.stats[s] ?? '?';
     statHtml += `<div class="stat-card ${!locked?'rolling':''}"><div class="stat-val">${val}</div><div class="stat-name">${s}</div></div>`;
   }
-  panel.innerHTML = `<h2>\u{1F3B2} 命运骰子</h2><p class="sub">命运女神决定你的起点——</p>
+  panel.innerHTML = `<h2>🎲 命运骰子</h2><p class="sub">命运女神决定${state.name||'你'}的起点——</p>
     <div class="roll-area"><div class="roll-display">${statHtml}</div></div>
-    ${locked ? `<div style="text-align:center;margin:12px 0">${qualHtml}<br>${talHtml}</div>` : '<p style="text-align:center;color:var(--sub);margin:12px 0">点击下方骰子，抽取你的命运...</p>'}
+    ${locked ? `<div style="text-align:center;margin:12px 0">${qualHtml}<br>${talHtml}</div>` : '<p style="text-align:center;color:var(--sub);margin:12px 0">点击下方骰子，抽取命运...</p>'}
     <div style="text-align:center"><button class="roll-btn ${!locked?'rolling':''}" onclick="doRoll()" ${locked?'disabled':''}>
-      ${locked ? '已锁定 \u{1F512}' : (state.rollCount===0 ? '\u{1F3B2} 抽取' : '\u{1F3B2} 抽取 ('+state.rollCount+'/3次)')}
+      ${locked ? '已锁定 🔒' : (state.rollCount===0 ? '🎲 抽取' : '🎲 抽取 ('+state.rollCount+'/3次)')}
     </button></div>
     <div class="nav-row"><button class="btn-nav" onclick="prevStep()">← 上一步</button>
     <button class="btn-nav" onclick="lockAndNext()" ${!locked?'disabled style="opacity:0.4"':''}>确定并继续 →</button></div>`;
@@ -209,10 +242,7 @@ function doRoll(){
   if(state.rollCount >= 3) state.locked = true;
   renderPanel();
 }
-function lockAndNext(){
-  if(!state.locked){ doRoll(); state.locked=true; }
-  state.step=4; renderPanel();
-}
+function lockAndNext(){ if(!state.locked){ doRoll(); state.locked=true; } state.step=5; renderPanel(); }
 function getRaceBonus(stat){
   if(!state.race) return 0;
   let r = RACES[state.race];
@@ -221,7 +251,7 @@ function getRaceBonus(stat){
   if(r.效果.includes('体力+3') && stat==='体力') return 3;
   if(r.效果.includes('敏捷+3') && stat==='敏捷') return 3;
   if(r.效果.includes('魔力+3') && stat==='魔力') return 3;
-  if(r.效果.includes('随机属性+5')){ return Math.random()<0.2 ? 5 : 0; }
+  if(r.效果.includes('随机属性+5')) return Math.random()<0.2 ? 5 : 0;
   return 0;
 }
 function pickWeighted(items, weights){
@@ -249,44 +279,37 @@ function buildPrompt(){
   let qualInfo = QUALITY_EFFECT[state.qual];
   let statsStr = STATS.map(s=>`${s}:${state.stats[s]}`).join(' | ');
   let talentsStr = state.talents.map(t=>`${t.名}（${t.效}）`).join('\n');
-  let sCount = state.talents.length;
-  return `【角色信息 - 艾尔德兰冒险者】\n${state.gender}性 | ${raceInfo.名} | ${state.qual}资质 | ${sCount}个天赋\n\n\u{1F3AD} 基础信息：\n- 性别：${state.gender}\n- 种族：${raceInfo.名}（天赋：${raceInfo.天赋}，${raceInfo.效果}）\n- 出身地：${raceInfo.区域}\n- 资质等级：${state.qual}（属性上限${qualInfo.上限}，成长倍率x${qualInfo.倍率}${state.qual==='神赐'?'，初始全属性+2':''}）\n\n\u{1F4CA} 属性：\n${statsStr}\n\n\u2728 天赋：\n${talentsStr}\n\n---\n【开始冒险提示词】\n你好，AI。接下来请你担任艾尔德兰大陆的冒险叙事者。请严格遵循以下设定展开冒险：\n\n【世界背景】\n艾尔德兰大陆——神陨纪元1024年。十二柱神已逝，凡人执笔书写命运。大陆残留「裂隙」，遍布魔物与秘宝。冒险者公会遍布城邦，无数人追寻「星辉碎片」的下落。\n\n【玩家角色】\n- 名字：未定\n- 性别：${state.gender}\n- 种族：${raceInfo.名}\n- 资质：${state.qual}\n- 出身地：${raceInfo.区域}\n- 属性：${statsStr}\n- 天赋：${talentsStr}\n\n【游戏规则】\n1. 玩家输入行动，你设定DC（10-18），玩家自动D20掷骰\n2. 掷骰≥DC成功，<DC失败\n3. 成功/失败都需生动描述\n4. 根据属性加成调整：力量+(${state.stats['力量']-10})，敏捷+(${state.stats['敏捷']-10})，智力+(${state.stats['智力']-10})\n5. 保持剧情连贯，记录关键NPC\n\n现在，请从${raceInfo.区域}开始，为这位冒险者写开场叙事。`;
+  return `【角色信息 - 艾尔德兰大陆冒险者】\n${state.name||'未命名'} · ${state.gender}性 · ${raceInfo.名} · ${state.qual}资质\n\n基础信息：\n- 名字：${state.name||'未定'}\n- 性别：${state.gender}\n- 种族：${raceInfo.名}（天赋：${raceInfo.天赋}，${raceInfo.效果}）\n- 出身地：${raceInfo.区域}\n- 资质：${state.qual}（属性上限${qualInfo.上限}，成长倍率x${qualInfo.倍率}）\n\n属性：\n${statsStr}\n\n天赋：\n${talentsStr}\n\n【世界背景】\n艾尔德兰大陆——神陨纪元1024年。十二柱神已逝，大陆遍布「裂隙」与秘宝，冒险者公会遍布城邦。\n\n现在，请从${raceInfo.区域}开始，为冒险者${state.name||'...'}展开叙事。`;
 }
 function renderResult(panel){
   let prompt = buildPrompt();
-  panel.innerHTML = `<h2>\u{1F4CB} 冒险者档案</h2><p class="sub">命运已定——复制提示词，开始你的冒险！</p>
+  panel.innerHTML = `<h2>📋 冒险者档案</h2><p class="sub">命运已定——${state.name||'冒险者'}，准备启程！</p>
     <textarea class="prompt-box" id="promptBox" readonly>${prompt}</textarea>
-    <button class="btn-start" onclick="startAdventure()">\u{1F3AE} 开始冒险！</button>
-    <button class="btn-copy" id="btnCopy" onclick="copyPrompt()" style="margin-top:8px">\u{1F4CB} 复制提示词（备用）</button>
-    <div class="nav-row"><button class="btn-nav" onclick="resetAll()">\u{1F504} 重新创建</button></div>`;
+    <button class="btn-start" onclick="startAdventure()">🎮 开始冒险！</button>
+    <button class="btn-copy" id="btnCopy" onclick="copyPrompt()" style="margin-top:8px">📋 复制提示词（备用）</button>
+    <div class="nav-row"><button class="btn-nav" onclick="resetAll()">🔄 重新创建</button></div>`;
 }
 function copyPrompt(){
   let ta = document.getElementById('promptBox');
   ta.select(); document.execCommand('copy');
   let btn = document.getElementById('btnCopy');
-  btn.textContent = '\u2705 已复制！';
-  btn.classList.add('copied');
-  setTimeout(()=>{ btn.textContent='\u{1F4CB} 复制提示词（备用）'; btn.classList.remove('copied'); }, 3000);
+  btn.textContent = '✅ 已复制！'; btn.classList.add('copied');
+  setTimeout(()=>{ btn.textContent='📋 复制提示词（备用）'; btn.classList.remove('copied'); }, 3000);
 }
 function startAdventure(){
   let raceInfo = RACES[state.race];
+  let qualInfo = QUALITY_EFFECT[state.qual];
   let charData = {
-    gender: state.gender, qual: state.qual, qualInfo: QUALITY_EFFECT[state.qual],
-    raceIcon: state.race ? [...state.race][0] : '\u{1F9DD}',
+    name: state.name || '未命名冒险者',
+    gender: state.gender, qual: state.qual, qualInfo: qualInfo,
+    raceIcon: state.race ? [...state.race][0] : '🧝',
     raceInfo: raceInfo ? { 名:raceInfo.名, 天赋:raceInfo.天赋, 效果:raceInfo.效果, 区域:raceInfo.区域 } : null,
     stats: state.stats, talents: state.talents, prompt: buildPrompt()
   };
   localStorage.setItem('eldran_character', JSON.stringify(charData));
   window.location.href = 'index.html';
 }
-function nextStep(){
-  if(state.step===1 && !state.gender) return;
-  if(state.step===2 && !state.race) return;
-  if(state.step===3){ lockAndNext(); return; }
-  state.step++; renderPanel();
-}
-function prevStep(){ if(state.step>1){ state.step--; renderPanel(); } }
-function resetAll(){ state = { step:1, gender:'', race:'', stats:{}, qual:'', talents:[], rollCount:0, locked:false }; renderPanel(); }
+function resetAll(){ state = { step:1, name:'', gender:'', race:'', stats:{}, qual:'', talents:[], rollCount:0, locked:false }; renderPanel(); }
 renderPanel();
 </script>
 </body>
